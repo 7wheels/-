@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>Tetris</title>
+  <style>
+    body {
+      background-color: #222;
+      color: #fff;
+      font-family: sans-serif;
+      text-align: center;
+      margin: 0;
+      padding: 0;
+    }
+    h1 {
+      margin-top: 1rem;
+    }
+    #tetris {
+      display: block;
+      margin: 1rem auto;
+      border: 1px solid #fff;
+      background-color: #000;
+    }
+  </style>
+</head>
+<body>
+  <h1>테트리스 게임</h1>
+  <canvas id="tetris" width="240" height="400"></canvas>
+  <p>점수: <span id="score">0</span></p>
+
+  <script>
+    const canvas = document.getElementById('tetris');
+    const context = canvas.getContext('2d');
+
+    // 블록 크기를 확대해서 보이도록 설정 (기본 단위 배율)
+    context.scale(20, 20);
+
+    // 2차원 배열(행렬) 생성 함수
+    function createMatrix(width, height) {
+      const matrix = [];
+      while (height--) {
+        matrix.push(new Array(width).fill(0));
+      }
+      return matrix;
+    }
+
+    // 테트리스 블록(도형) 정의 함수
+    function createPiece(type) {
+      switch (type) {
+        case 'T':
+          return [
+            [0, 1, 0],
+            [1, 1, 1],
+            [0, 0, 0],
+          ];
+        case 'O':
+          return [
+            [2, 2],
+            [2, 2],
+          ];
+        case 'L':
+          return [
+            [0, 3, 0],
+            [0, 3, 0],
+            [0, 3, 3],
+          ];
+        case 'J':
+          return [
+            [0, 4, 0],
+            [0, 4, 0],
+            [4, 4, 0],
+          ];
+        case 'I':
+          return [
+            [5, 0, 0, 0],
+            [5, 0, 0, 0],
+            [5, 0, 0, 0],
+            [5, 0, 0, 0],
+          ];
+        case 'S':
+          return [
+            [0, 6, 6],
+            [6, 6, 0],
+            [0, 0, 0],
+          ];
+        case 'Z':
+          return [
+            [7, 7, 0],
+            [0, 7, 7],
+            [0, 0, 0],
+          ];
+      }
+    }
+
+    // 플레이어 블록과 보드가 충돌하는지 판별
+    function collide(arena, player) {
+      const [m, o] = [player.matrix, player.pos];
+      for (let y = 0; y < m.length; ++y) {
+        for (let x = 0; x < m[y].length; ++x) {
+          // 블록이 0이 아니고, 보드도 0이 아니면 충돌
+          if (m[y][x] !== 0 && 
+              (arena[y + o.y] && arena[y + o.y][x + o.x]) !== 0) {
+            return true;
+          }
+        }
+      }
+      return false;
+    }
+
+    // 충돌 시 보드와 블록을 합치는 함수
+    function merge(arena, player) {
+      player.matrix.forEach((row, y) => {
+        row.forEach((value, x) => {
+          if (value !== 0) {
+            arena[y + player.pos.y][x + player.pos.x] = value;
+          }
+        });
+      });
+    }
+
+    // 화면에 보드나 블록을 그려주는 함수
+    function drawMatrix(matrix, offset) {
+      matrix.forEach((row, y) => {
+        row.forEach((value, x) => {
+          if (value !== 0) {
+            // value를 이용해 임의로 색을 바꿔주는 예시
+            context.fillStyle = 'hsl(' + (value * 40) + ', 100%, 50%)';
+            context.fillRect(x + offset.x, y + offset.y, 1, 1);
+          }
+        });
+      });
+    }
+
+    // 전체 화면 그리기
+    function draw() {
+      // 배경 지우기
+      context.fillStyle = '#000';
+      context.fillRect(0, 0, canvas.width, canvas.height);
+
+      // 보드(아레나), 플레이어 블록 순서로 그린다
+      drawMatrix(arena, {x: 0, y: 0});
+      drawMatrix(player.matrix, player.pos);
+    }
+
+    // 한 줄이 전부 찼을 경우 라인 지우고 점수 추가
+    function arenaSweep() {
+      outer: for (let y = arena.length - 1; y >= 0; --y) {
+        for (let x = 0; x < arena[y].length; ++x) {
+          if (arena[y][x] === 0) {
+            continue outer;
+          }
+        }
+        // 가득 찬 줄은 지우고 맨 위에 빈 줄 추가
+        const row = arena.splice(y, 1)[0].fill(0);
+        arena.unshift(row);
+        ++y;
+        player.score += 10;
+      }
+    }
+
+    // 블록이 일정 시간 간격으로 떨어지게 하는 부분
+    let dropCounter = 0;
+    let dropInterval = 1000;  // 1초 간격
+
+    let lastTime = 0;
+    function update(time = 0) {
+      const deltaTime = time - lastTime;
+      lastTime = time;
+
+      dropCounter += deltaTime;
+      if (dropCounter > dropInterval) {
+        playerDrop();
+      }
+
+      draw();
+      requestAnimationFrame(update);
+    }
+
+    // 블록을 아래로 한 칸 떨어뜨리는 함수
+    function playerDrop() {
+      player.pos.y++;
+      if (collide(arena, player)) {
+        // 충돌했다면 제자리로 돌리고 보드에 합체
+        player.pos.y--;
+        merge(arena, player);
+        // 새 블록 시작
+        playerReset();
+        // 라인이 모두 찼다면 지우기
+        arenaSweep();
+        updateScore();
+      }
+      dropCounter = 0;
+    }
+
+    // 플레이어 좌우 이동
+    function playerMove(dir) {
+      player.pos.x += dir;
+      if (collide(arena, player)) {
+        player.pos.x -= dir;
+      }
+    }
+
+    // 새 블록 추가
+    function playerReset() {
+      const pieces = 'TJLOSZI';
+      // 무작위로 블록 타입 선택
+      player.matrix = createPiece(
+        pieces[(pieces.length * Math.random()) | 0]
+      );
+      player.pos.y = 0;
+      // 가운데 정렬
+      player.pos.x =
+        (arena[0].length / 2) | 0 -
+        (player.matrix[0].length / 2) | 0;
+
+      // 새로 시작하자마자 충돌이면 보드를 비우고 점수 0으로
+      if (collide(arena, player)) {
+        arena.forEach(row => row.fill(0));
+        player.score = 0;
+        updateScore();
+      }
+    }
+
+    // 블록 회전
+    function playerRotate(dir) {
+      const pos = player.pos.x;
+      let offset = 1;
+      rotate(player.matrix, dir);
+      // 회전하면서 벽과 충돌하면 약간씩 밀어준다
+      while (collide(arena, player)) {
+        player.pos.x += offset;
+        offset = -(offset + (offset > 0 ? 1 : -1));
+        // 너무 많이 밀어봐도 안 되면 회전 취소
+        if (offset > player.matrix[0].length) {
+          rotate(player.matrix, -dir);
+          player.pos.x = pos;
+          return;
+        }
+      }
+    }
+
+    // 행렬(도형)을 회전시키는 함수
+    function rotate(matrix, dir) {
+      for (let y = 0; y < matrix.length; ++y) {
+        for (let x = 0; x < y; ++x) {
+          [matrix[x][y], matrix[y][x]] = [matrix[y][x], matrix[x][y]];
+        }
+      }
+      if (dir > 0) {
+        // 시계 방향
+        matrix.forEach(row => row.reverse());
+      } else {
+        // 반시계 방향
+        matrix.reverse();
+      }
+    }
+
+    // 점수 갱신
+    function updateScore() {
+      document.getElementById('score').innerText = player.score;
+    }
+
+    // 아레나(12 x 20 보드) 만들기
+    const arena = createMatrix(12, 20);
+
+    // 플레이어 초기 상태
+    const player = {
+      pos: { x: 0, y: 0 },
+      matrix: null,
+      score: 0
+    };
+
+    // 키 입력 이벤트
+    document.addEventListener('keydown', event => {
+      // 왼쪽 화살표
+      if (event.keyCode === 37) {
+        playerMove(-1);
+      }
+      // 오른쪽 화살표
+      else if (event.keyCode === 39) {
+        playerMove(1);
+      }
+      // 아래 화살표
+      else if (event.keyCode === 40) {
+        playerDrop();
+      }
+      // Q 키
+      else if (event.keyCode === 81) {
+        playerRotate(-1);
+      }
+      // W 키
+      else if (event.keyCode === 87) {
+        playerRotate(1);
+      }
+    });
+
+    // 게임 초기화
+    playerReset();
+    updateScore();
+    update(); // 프레임 루프 시작
+  </script>
+</body>
+</html>
