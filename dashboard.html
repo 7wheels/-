@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>히어컴퍼니 대시보드</title>
+<style>
+:root{--bg-base:#0D1117;--bg-card:#161B22;--bg-elv:#21262D;--border:#30363D;--border-sub:#21262D;--gold-dim:#C8A96E;--gold-mid:#E8C97E;--gold-bright:#E8A020;--tp:#E2E8F0;--ts:#C9D1D9;--tm:#8B949E;--tf:#6E7681;--green:#3FB950;--red:#F85149;--blue:#58A6FF;--yellow:#E3B341;--font:'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',sans-serif;--sw:220px;--r:10px}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--font);background:var(--bg-base);color:var(--tp);min-height:100vh;display:flex}
+#sidebar{position:fixed;top:0;left:0;width:var(--sw);height:100vh;background:var(--bg-card);border-right:1px solid var(--border);overflow-y:auto;display:flex;flex-direction:column;z-index:100}
+.logo-area{display:flex;align-items:center;gap:10px;padding:16px;border-bottom:1px solid var(--border)}
+.logo-icon{width:34px;height:34px;background:linear-gradient(135deg,#C8A96E,#F0D080);border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:18px;color:#0D1117;flex-shrink:0}
+.logo-name{font-size:12px;font-weight:800;color:var(--gold-mid);letter-spacing:.06em}
+.logo-sub{font-size:10px;color:var(--tf);margin-top:1px}
+.nav-list{list-style:none;padding:8px 0;flex:1}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 16px;cursor:pointer;font-size:13px;color:var(--tm);transition:all .15s;user-select:none}
+.nav-item:hover{background:var(--bg-elv);color:var(--tp)}
+.nav-item.active{background:rgba(200,169,110,.12);color:var(--gold-mid);font-weight:700}
+.nav-icon{font-size:15px;width:18px;text-align:center}
+.nav-divider{font-size:10px;font-weight:700;color:var(--tf);letter-spacing:.12em;padding:12px 16px 4px}
+#app{margin-left:var(--sw);flex:1;padding:24px;min-height:100vh}
+.page{display:none}
+.page.active{display:block;animation:fadeIn .25s ease}
+.page-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.page-title{font-size:20px;font-weight:800;display:flex;align-items:center;gap:8px}
+.page-sub{font-size:12px;color:var(--tf);font-weight:400;margin-top:2px}
+.btn{padding:8px 16px;border-radius:7px;border:none;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;font-family:var(--font)}
+.btn-primary{background:linear-gradient(135deg,var(--gold-dim),var(--gold-bright));color:#0D1117}
+.btn-primary:hover{filter:brightness(1.1)}
+.btn-secondary{background:var(--bg-elv);color:var(--ts);border:1px solid var(--border)}
+.btn-secondary:hover{border-color:var(--gold-dim);color:var(--tp)}
+.btn-danger{background:rgba(248,81,73,.12);color:var(--red);border:1px solid rgba(248,81,73,.3)}
+.btn-danger:hover{background:rgba(248,81,73,.22)}
+.btn-sm{padding:4px 9px;font-size:11px}
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r);padding:20px}
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+.kpi-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r);padding:18px 20px;transition:border-color .15s,transform .12s}
+.kpi-card:hover{border-color:var(--gold-dim);transform:translateY(-2px)}
+.kpi-lbl{font-size:11px;color:var(--tf);font-weight:700;letter-spacing:.08em;margin-bottom:8px}
+.kpi-val{font-size:28px;font-weight:900;line-height:1}
+.kpi-sub{font-size:11px;color:var(--tm);margin-top:5px}
+.badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700}
+.svc-tbl{width:100%;border-collapse:collapse;font-size:13px}
+.svc-tbl th{padding:9px 12px;text-align:left;font-size:11px;color:var(--tf);font-weight:700;letter-spacing:.08em;border-bottom:1px solid var(--border)}
+.svc-tbl td{padding:10px 12px;border-bottom:1px solid var(--border-sub);color:var(--ts)}
+.svc-tbl tr:last-child td{border-bottom:none}
+.svc-tbl tr:hover td{background:rgba(255,255,255,.02)}
+.svc-tbl .num{color:var(--tp);font-weight:700;text-align:right}
+.cli-tbl{width:100%;border-collapse:collapse;font-size:13px}
+.cli-tbl th{padding:9px 12px;text-align:left;font-size:11px;color:var(--tf);font-weight:700;letter-spacing:.08em;border-bottom:1px solid var(--border);background:var(--bg-card);position:sticky;top:0}
+.cli-tbl td{padding:10px 12px;border-bottom:1px solid var(--border-sub);color:var(--ts)}
+.cli-row:hover td{background:rgba(255,255,255,.025);cursor:pointer}
+.co-name{color:var(--tp);font-weight:600}
+.exp-row td{background:var(--bg-elv)!important;padding:14px 16px!important}
+.search-bar{display:flex;gap:10px;margin-bottom:14px;align-items:center}
+.search-inp{flex:1;padding:9px 13px;background:var(--bg-elv);border:1.5px solid var(--border);border-radius:7px;color:var(--tp);font-size:13px;outline:none;font-family:var(--font)}
+.search-inp:focus{border-color:var(--gold-dim)}
+.search-inp::placeholder{color:var(--tf)}
+.kb-wrap{display:flex;gap:14px;overflow-x:auto;padding-bottom:8px}
+.kb-col{min-width:220px;flex:1;background:var(--bg-elv);border:1px solid var(--border);border-radius:var(--r);padding:12px;display:flex;flex-direction:column;max-height:calc(100vh - 220px)}
+.kb-hdr{display:flex;align-items:center;justify-content:space-between;font-size:12px;font-weight:700;color:var(--tm);letter-spacing:.06em;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+.kb-cnt{background:var(--bg-card);border-radius:10px;padding:1px 7px;font-size:11px;color:var(--tm)}
+.kb-cards{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:8px}
+.case-card{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:11px 12px;transition:border-color .15s,transform .12s}
+.case-card:hover{border-color:var(--gold-dim);transform:translateY(-1px)}
+.case-co{font-size:13px;font-weight:700;color:var(--tp);margin-bottom:5px}
+.case-meta{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:7px}
+.case-foot{display:flex;align-items:center;justify-content:space-between}
+.case-amt{font-size:12px;color:var(--gold-dim);font-weight:600}
+.st-sel{font-size:11px;padding:2px 6px;background:var(--bg-elv);border:1px solid var(--border);border-radius:4px;color:var(--tm);cursor:pointer;outline:none;font-family:var(--font)}
+.st-sel:focus{border-color:var(--gold-dim)}
+.sub-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
+.sub-tab{padding:6px 13px;border-radius:6px;font-size:12px;font-weight:600;border:1.5px solid var(--border);background:var(--bg-elv);color:var(--tm);cursor:pointer;transition:all .15s}
+.sub-tab:hover{border-color:var(--gold-dim);color:var(--tp)}
+.sub-tab.active{background:rgba(200,169,110,.15);border-color:var(--gold-dim);color:var(--gold-mid)}
+.act-item{display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--border-sub)}
+.act-item:last-child{border-bottom:none}
+.act-dot{width:8px;height:8px;border-radius:50%;margin-top:4px;flex-shrink:0}
+.act-txt{font-size:13px;color:var(--ts)}
+.act-dt{font-size:11px;color:var(--tf);margin-top:2px}
+.g2{display:grid;grid-template-columns:2fr 1fr;gap:14px}
+#modal-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:999;align-items:center;justify-content:center}
+#modal-ov.open{display:flex;animation:fadeIn .2s ease}
+#modal-box{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:24px;width:520px;max-width:calc(100vw - 40px);max-height:calc(100vh - 60px);overflow-y:auto;animation:slideUp .2s ease}
+.modal-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.modal-title{font-size:16px;font-weight:800}
+.modal-x{background:none;border:none;color:var(--tf);font-size:18px;cursor:pointer;padding:2px 6px;border-radius:4px;transition:color .15s}
+.modal-x:hover{color:var(--tp)}
+.fg{margin-bottom:14px}
+.fl{font-size:12px;font-weight:700;color:var(--tm);margin-bottom:5px;display:block}
+.fl.req::after{content:' *';color:var(--red)}
+.fi,.fsel,.fta{width:100%;padding:9px 12px;background:var(--bg-elv);border:1.5px solid var(--border);border-radius:7px;color:var(--tp);font-size:13px;outline:none;font-family:var(--font);transition:border-color .15s}
+.fi:focus,.fsel:focus,.fta:focus{border-color:var(--gold-dim)}
+.fi::placeholder,.fta::placeholder{color:var(--tf)}
+.fta{resize:vertical;min-height:70px}
+.fsel option{background:var(--bg-card)}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.f-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:20px}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--tf)}
+@media(max-width:900px){:root{--sw:52px}.nav-label,.logo-text,.nav-divider{display:none}.logo-area{padding:12px 9px;justify-content:center}.nav-item{justify-content:center;padding:10px}.nav-icon{font-size:18px}.kpi-grid{grid-template-columns:repeat(2,1fr)}.g2{grid-template-columns:1fr}}
+@media(max-width:640px){#sidebar{display:none}#app{margin-left:0;padding:12px}}
+</style>
+</head>
+<body>
+<nav id="sidebar">
+  <div class="logo-area">
+    <div class="logo-icon">H</div>
+    <div class="logo-text">
+      <div class="logo-name">HERECOMPANY</div>
+      <div class="logo-sub">비즈니스 대시보드</div>
+    </div>
+  </div>
+  <ul class="nav-list">
+    <li class="nav-item active" data-page="home"><span class="nav-icon">🏠</span><span class="nav-label">홈</span></li>
+    <li class="nav-item" data-page="clients"><span class="nav-icon">👥</span><span class="nav-label">고객관리</span></li>
+    <li class="nav-divider">서비스</li>
+    <li class="nav-item" data-page="corp"><span class="nav-icon">🏢</span><span class="nav-label">법인설립</span></li>
+    <li class="nav-item" data-page="lab"><span class="nav-icon">🔬</span><span class="nav-label">연구소설립</span></li>
+    <li class="nav-item" data-page="cert"><span class="nav-icon">🏆</span><span class="nav-label">기업인증</span></li>
+    <li class="nav-item" data-page="fund"><span class="nav-icon">💰</span><span class="nav-label">정책자금</span></li>
+    <li class="nav-item" data-page="training"><span class="nav-icon">🎓</span><span class="nav-label">기업훈련지원금</span></li>
+    <li class="nav-item" data-page="prediger"><span class="nav-icon">📊</span><span class="nav-label">프레디저 기업진단</span></li>
+  </ul>
+</nav>
+<main id="app">
+  <section id="page-home" class="page active"></section>
+  <section id="page-clients" class="page"></section>
+  <section id="page-corp" class="page"></section>
+  <section id="page-lab" class="page"></section>
+  <section id="page-cert" class="page"></section>
+  <section id="page-fund" class="page"></section>
+  <section id="page-training" class="page"></section>
+  <section id="page-prediger" class="page"></section>
+</main>
+<div id="modal-ov"><div id="modal-box"></div></div>
+<script>
+(function(){
+'use strict';
+const SVC={
+  corp:{label:'법인설립',icon:'🏢',color:'#7C3AED',subtypes:[]},
+  lab:{label:'연구소설립',icon:'🔬',color:'#0891B2',subtypes:[]},
+  cert:{label:'기업인증',icon:'🏆',color:'#D97706',subtypes:['벤처기업인증','메인비즈인증','이노비즈인증','소부장인증']},
+  fund:{label:'정책자금',icon:'💰',color:'#059669',subtypes:['기보','신보','재단','중진공','소진공','진흥원']},
+  training:{label:'기업훈련지원금',icon:'🎓',color:'#2563EB',subtypes:[]},
+  prediger:{label:'프레디저 기업진단',icon:'📊',color:'#9333EA',subtypes:[]}
+};
+const STAGES=['문의접수','검토중','진행중','완료','취소'];
+const ACT=['문의접수','검토중','진행중'];
+const SC={
+  '문의접수':{bg:'rgba(139,148,158,.15)',c:'#8B949E'},
+  '검토중':{bg:'rgba(227,179,65,.15)',c:'#E3B341'},
+  '진행중':{bg:'rgba(88,166,255,.15)',c:'#58A6FF'},
+  '완료':{bg:'rgba(63,185,80,.15)',c:'#3FB950'},
+  '취소':{bg:'rgba(248,81,73,.15)',c:'#F85149'}
+};
+const St={clients:[],cases:[],ui:{pg:'home',q:'',expId:null,sub:{cert:'전체',fund:'전체'}}};
+
+/* ── UTILS ── */
+function gid(p){return p+'_'+Date.now()+'_'+Math.random().toString(36).slice(2,7)}
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function fmt(n){return n?'₩'+Number(n).toLocaleString('ko-KR'):'-'}
+function fd(s){if(!s)return'-';const p=s.split('-');return p.length===3?p[0]+'.'+p[1]+'.'+p[2]:s}
+function ym(){const n=new Date();return n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')}
+function today(){return new Date().toISOString().split('T')[0]}
+function doff(n){const d=new Date();d.setDate(d.getDate()+n);return d.toISOString().split('T')[0]}
+
+/* ── STORAGE ── */
+const Stor={
+  load(){
+    St.clients=JSON.parse(localStorage.getItem('hc_c')||'null')||[];
+    St.cases=JSON.parse(localStorage.getItem('hc_k')||'null')||[];
+    if(!St.clients.length)this.seed();
+  },
+  save(){
+    localStorage.setItem('hc_c',JSON.stringify(St.clients));
+    localStorage.setItem('hc_k',JSON.stringify(St.cases));
+  },
+  seed(){
+    St.clients=[
+      {id:'c01',companyName:'테크노시스템즈',contactName:'김민준',phone:'010-2345-6789',email:'minjun@techno.kr',registeredDate:doff(-45),memo:'2차 상담 완료'},
+      {id:'c02',companyName:'그린에너지솔루션',contactName:'박지현',phone:'010-3456-7890',email:'jihyun@green.kr',registeredDate:doff(-30),memo:''},
+      {id:'c03',companyName:'스마트팩토리코리아',contactName:'이서준',phone:'010-4567-8901',email:'seojun@smart.kr',registeredDate:doff(-60),memo:'이노비즈 우선'},
+      {id:'c04',companyName:'바이오메디컬랩',contactName:'최아린',phone:'010-5678-9012',email:'arin@biomedical.kr',registeredDate:doff(-20),memo:''},
+      {id:'c05',companyName:'클라우드넷',contactName:'정우혁',phone:'010-6789-0123',email:'woohyuk@cloud.kr',registeredDate:doff(-15),memo:'훈련지원 긴급'},
+      {id:'c06',companyName:'이노텍솔루션',contactName:'강하은',phone:'010-7890-1234',email:'haeun@innotech.kr',registeredDate:doff(-10),memo:''},
+      {id:'c07',companyName:'드림소프트웨어',contactName:'오준서',phone:'010-8901-2345',email:'junseo@dreamsoft.kr',registeredDate:doff(-5),memo:'소부장 해당여부 검토'}
+    ];
+    St.cases=[
+      {id:'k01',clientId:'c01',serviceType:'corp',serviceSubType:null,status:'완료',startDate:doff(-40),endDate:doff(-10),amount:3000000,memo:''},
+      {id:'k02',clientId:'c06',serviceType:'corp',serviceSubType:null,status:'진행중',startDate:doff(-8),endDate:null,amount:2500000,memo:''},
+      {id:'k03',clientId:'c01',serviceType:'lab',serviceSubType:null,status:'검토중',startDate:doff(-5),endDate:null,amount:4000000,memo:'기업부설연구소'},
+      {id:'k04',clientId:'c04',serviceType:'lab',serviceSubType:null,status:'진행중',startDate:doff(-20),endDate:null,amount:3500000,memo:''},
+      {id:'k05',clientId:'c02',serviceType:'cert',serviceSubType:'벤처기업인증',status:'완료',startDate:doff(-50),endDate:doff(-15),amount:2000000,memo:''},
+      {id:'k06',clientId:'c03',serviceType:'cert',serviceSubType:'이노비즈인증',status:'진행중',startDate:doff(-25),endDate:null,amount:2500000,memo:''},
+      {id:'k07',clientId:'c04',serviceType:'cert',serviceSubType:'메인비즈인증',status:'검토중',startDate:doff(-12),endDate:null,amount:2000000,memo:''},
+      {id:'k08',clientId:'c07',serviceType:'cert',serviceSubType:'소부장인증',status:'문의접수',startDate:doff(-3),endDate:null,amount:0,memo:''},
+      {id:'k09',clientId:'c02',serviceType:'fund',serviceSubType:'기보',status:'진행중',startDate:doff(-22),endDate:null,amount:5000000,memo:'기술보증 5천'},
+      {id:'k10',clientId:'c05',serviceType:'fund',serviceSubType:'신보',status:'검토중',startDate:doff(-7),endDate:null,amount:3000000,memo:''},
+      {id:'k11',clientId:'c03',serviceType:'fund',serviceSubType:'중진공',status:'문의접수',startDate:doff(-2),endDate:null,amount:0,memo:''},
+      {id:'k12',clientId:'c07',serviceType:'fund',serviceSubType:'재단',status:'진행중',startDate:doff(-18),endDate:null,amount:2000000,memo:'지역신보'},
+      {id:'k13',clientId:'c05',serviceType:'training',serviceSubType:null,status:'진행중',startDate:doff(-14),endDate:null,amount:1500000,memo:''},
+      {id:'k14',clientId:'c02',serviceType:'training',serviceSubType:null,status:'완료',startDate:doff(-60),endDate:doff(-30),amount:1200000,memo:''},
+      {id:'k15',clientId:'c06',serviceType:'prediger',serviceSubType:null,status:'완료',startDate:doff(-35),endDate:doff(-20),amount:1500000,memo:''},
+      {id:'k16',clientId:'c03',serviceType:'prediger',serviceSubType:null,status:'문의접수',startDate:doff(-1),endDate:null,amount:0,memo:''}
+    ];
+    this.save();
+  }
+};
+
+/* ── COMPONENTS ── */
+function sbadge(st){const s=SC[st]||SC['문의접수'];return '<span class="badge" style="background:'+s.bg+';color:'+s.c+'">'+esc(st)+'</span>'}
+function stag(type,sub){const s=SVC[type];if(!s)return'';const lbl=sub||s.label;return'<span class="badge" style="background:'+s.color+'22;color:'+s.color+';border:1px solid '+s.color+'44">'+esc(lbl)+'</span>'}
+function caseCard(c){
+  const cl=St.clients.find(x=>x.id===c.clientId)||{companyName:'(미지정)'};
+  const memoHtml=c.memo?'<div style="font-size:11px;color:var(--tf);margin-top:6px;padding-top:6px;border-top:1px solid var(--border-sub)">'+esc(c.memo)+'</div>':'';
+  const selOpts=STAGES.map(s=>'<option value="'+esc(s)+'"'+(s===c.status?' selected':'')+'>'+esc(s)+'</option>').join('');
+  return '<div class="case-card" data-id="'+esc(c.id)+'">'
+    +'<div class="case-co">'+esc(cl.companyName)+'</div>'
+    +'<div class="case-meta">'+(c.serviceSubType?stag(c.serviceType,c.serviceSubType):'')
+    +'<span style="font-size:11px;color:var(--tf)">'+fd(c.startDate)+'</span></div>'
+    +'<div class="case-foot"><span class="case-amt">'+fmt(c.amount)+'</span>'
+    +'<div style="display:flex;gap:5px;align-items:center">'
+    +'<select class="st-sel" data-action="st" data-cid="'+esc(c.id)+'">'+selOpts+'</select>'
+    +'<button class="btn btn-sm btn-secondary" data-action="edit-case" data-id="'+esc(c.id)+'">✏️</button>'
+    +'<button class="btn btn-sm btn-danger" data-action="del-case" data-id="'+esc(c.id)+'">🗑</button>'
+    +'</div></div>'+memoHtml+'</div>';
+}
+function kbCol(stage,cases){
+  const s=SC[stage];
+  const cards=cases.length?cases.map(caseCard).join(''):'<div style="text-align:center;color:var(--tf);font-size:12px;padding:20px 0">없음</div>';
+  return '<div class="kb-col"><div class="kb-hdr"><span style="color:'+s.c+'">'+esc(stage)+'</span><span class="kb-cnt">'+cases.length+'</span></div><div class="kb-cards">'+cards+'</div></div>';
+}
+function subTabs(pk,subs,active){
+  return '<div class="sub-tabs">'+['전체',...subs].map(st=>'<button class="sub-tab'+(active===st?' active':'')+'" data-action="sub" data-pk="'+esc(pk)+'" data-st="'+esc(st)+'">'+esc(st)+'</button>').join('')+'</div>';
+}
+
+/* ── ROUTER ── */
+function nav(pg){
+  St.ui.pg=pg;
+  document.querySelectorAll('.page').forEach(p=>{p.classList.remove('active')});
+  const sec=document.getElementById('page-'+pg);
+  if(sec)sec.classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(item=>item.classList.toggle('active',item.dataset.page===pg));
+  render(pg);
+}
+
+/* ── PAGES ── */
+function render(pg){
+  if(pg==='home')pageHome();
+  else if(pg==='clients')pageClients();
+  else pageSvc(pg);
+}
+
+function pageHome(){
+  const sec=document.getElementById('page-home');
+  const m=ym();
+  const now=new Date();
+  const tot=St.clients.length;
+  const actv=St.cases.filter(c=>ACT.includes(c.status)).length;
+  const done=St.cases.filter(c=>c.status==='완료'&&(c.endDate||'').startsWith(m)).length;
+  const amt=St.cases.filter(c=>(c.startDate||'').startsWith(m)).reduce((s,c)=>s+(c.amount||0),0);
+  const svcRows=Object.entries(SVC).map(([k,s])=>{
+    const cc=St.cases.filter(c=>c.serviceType===k);
+    const nums=STAGES.map(st=>'<td class="num">'+(cc.filter(c=>c.status===st).length||'-')+'</td>').join('');
+    return '<tr><td><span style="margin-right:6px">'+s.icon+'</span>'+esc(s.label)+'</td>'+nums+'<td class="num" style="color:var(--gold-mid)">'+cc.length+'</td></tr>';
+  }).join('');
+  const recent=[...St.cases].sort((a,b)=>(b.startDate||'').localeCompare(a.startDate||'')).slice(0,10);
+  const feed=recent.map(c=>{
+    const cl=St.clients.find(x=>x.id===c.clientId)||{companyName:'(미지정)'};
+    const s=SVC[c.serviceType];
+    const dot=SC[c.status];
+    return '<div class="act-item"><div class="act-dot" style="background:'+dot.c+'"></div>'
+      +'<div><div class="act-txt"><strong>'+esc(cl.companyName)+'</strong> · '+(s?s.icon+' '+esc(s.label):'')+' '+(c.serviceSubType?'('+esc(c.serviceSubType)+') ':'')+sbadge(c.status)+'</div>'
+      +'<div class="act-dt">'+fd(c.startDate)+'</div></div></div>';
+  }).join('')||'<div style="color:var(--tf);font-size:13px;padding:12px 0">최근 활동 없음</div>';
+
+  const amtFmt=amt>=10000000?fmt(amt):fmt(amt);
+  sec.innerHTML=
+    '<div class="page-hdr"><div><div class="page-title">🏠 대시보드 홈</div>'
+    +'<div class="page-sub">'+now.getFullYear()+'년 '+( now.getMonth()+1)+'월 현황</div></div></div>'
+    +'<div class="kpi-grid">'
+    +'<div class="kpi-card"><div class="kpi-lbl">전체 고객</div><div class="kpi-val" style="color:var(--gold-mid)">'+tot+'</div><div class="kpi-sub">등록 고객사</div></div>'
+    +'<div class="kpi-card"><div class="kpi-lbl">진행 중 건수</div><div class="kpi-val" style="color:var(--blue)">'+actv+'</div><div class="kpi-sub">문의접수·검토·진행중</div></div>'
+    +'<div class="kpi-card"><div class="kpi-lbl">이번 달 완료</div><div class="kpi-val" style="color:var(--green)">'+done+'</div><div class="kpi-sub">'+(now.getMonth()+1)+'월 완료 건수</div></div>'
+    +'<div class="kpi-card"><div class="kpi-lbl">이번 달 수임액</div><div class="kpi-val" style="color:var(--gold-bright);font-size:22px">'+amtFmt+'</div><div class="kpi-sub">이번 달 착수 기준</div></div>'
+    +'</div>'
+    +'<div class="g2">'
+    +'<div class="card"><div style="font-size:12px;font-weight:700;color:var(--tm);letter-spacing:.1em;margin-bottom:14px">서비스별 현황</div>'
+    +'<table class="svc-tbl"><thead><tr><th>서비스</th><th style="text-align:right">문의접수</th><th style="text-align:right">검토중</th><th style="text-align:right">진행중</th><th style="text-align:right">완료</th><th style="text-align:right">취소</th><th style="text-align:right">합계</th></tr></thead><tbody>'+svcRows+'</tbody></table></div>'
+    +'<div class="card"><div style="font-size:12px;font-weight:700;color:var(--tm);letter-spacing:.1em;margin-bottom:14px">최근 활동</div>'+feed+'</div>'
+    +'</div>';
+}
+
+function pageClients(){
+  const sec=document.getElementById('page-clients');
+  const q=St.ui.q.toLowerCase();
+  const list=St.clients.filter(c=>!q||c.companyName.toLowerCase().includes(q)||c.contactName.toLowerCase().includes(q));
+  const rows=list.map(cl=>{
+    const kk=St.cases.filter(c=>c.clientId===cl.id);
+    const acnt=kk.filter(c=>ACT.includes(c.status)).length;
+    const expanded=St.ui.expId===cl.id;
+    let expHtml='';
+    if(expanded){
+      const cr=kk.length?kk.map(c=>{
+        const s=SVC[c.serviceType];
+        return '<tr><td>'+(s?s.icon+' '+esc(s.label):'')+(c.serviceSubType?' ('+esc(c.serviceSubType)+')':'')+'</td><td>'+sbadge(c.status)+'</td><td>'+fd(c.startDate)+'</td><td>'+fmt(c.amount)+'</td>'
+          +'<td><button class="btn btn-sm btn-secondary" data-action="edit-case" data-id="'+esc(c.id)+'">수정</button> <button class="btn btn-sm btn-danger" data-action="del-case" data-id="'+esc(c.id)+'">삭제</button></td></tr>';
+      }).join(''):'<tr><td colspan="5" style="text-align:center;color:var(--tf);padding:10px">케이스 없음</td></tr>';
+      expHtml='<tr class="exp-row"><td colspan="7">'
+        +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'
+        +'<span style="font-size:12px;font-weight:700;color:var(--tm)">케이스 목록 ('+kk.length+'건)</span>'
+        +'<button class="btn btn-sm btn-primary" data-action="add-case" data-st="" data-pcl="'+esc(cl.id)+'">+ 케이스 추가</button></div>'
+        +'<table style="width:100%;font-size:12px;border-collapse:collapse"><thead><tr style="color:var(--tf)">'
+        +'<th style="padding:4px 8px;text-align:left">서비스</th><th style="padding:4px 8px;text-align:left">상태</th><th style="padding:4px 8px;text-align:left">시작일</th><th style="padding:4px 8px;text-align:left">수임액</th><th style="padding:4px 8px;text-align:left">액션</th>'
+        +'</tr></thead><tbody>'+cr+'</tbody></table></td></tr>';
+    }
+    return '<tr class="cli-row" data-action="expand" data-id="'+esc(cl.id)+'">'
+      +'<td><span class="co-name">'+esc(cl.companyName)+'</span></td>'
+      +'<td>'+esc(cl.contactName)+'</td>'
+      +'<td>'+esc(cl.phone)+'</td>'
+      +'<td>'+esc(cl.email)+'</td>'
+      +'<td>'+fd(cl.registeredDate)+'</td>'
+      +'<td><span style="font-weight:700;color:'+(acnt>0?'var(--blue)':'var(--tf)')+'">'+( acnt>0?acnt+'건 진행':kk.length+'건')+'</span></td>'
+      +'<td onclick="event.stopPropagation()">'
+      +'<button class="btn btn-sm btn-secondary" data-action="edit-cl" data-id="'+esc(cl.id)+'">수정</button> '
+      +'<button class="btn btn-sm btn-danger" data-action="del-cl" data-id="'+esc(cl.id)+'">삭제</button>'
+      +'</td></tr>'+expHtml;
+  }).join('');
+  sec.innerHTML=
+    '<div class="page-hdr"><div><div class="page-title">👥 고객관리</div>'
+    +'<div class="page-sub">전체 '+St.clients.length+'개 고객사</div></div>'
+    +'<button class="btn btn-primary" data-action="add-cl">+ 고객 추가</button></div>'
+    +'<div class="search-bar"><input type="text" class="search-inp" id="cli-q" placeholder="회사명, 담당자명으로 검색..." value="'+esc(St.ui.q)+'"></div>'
+    +'<div class="card" style="padding:0;overflow:hidden"><table class="cli-tbl">'
+    +'<thead><tr><th>회사명</th><th>담당자</th><th>연락처</th><th>이메일</th><th>등록일</th><th>진행상황</th><th>액션</th></tr></thead>'
+    +'<tbody>'+(rows||'<tr><td colspan="7" style="text-align:center;color:var(--tf);padding:30px">고객이 없습니다</td></tr>')+'</tbody></table></div>';
+}
+
+function pageSvc(key){
+  const s=SVC[key];if(!s)return;
+  const sec=document.getElementById('page-'+key);if(!sec)return;
+  const hasSub=s.subtypes.length>0;
+  const activeSub=St.ui.sub[key]||'전체';
+  let cases=St.cases.filter(c=>c.serviceType===key);
+  if(hasSub&&activeSub!=='전체')cases=cases.filter(c=>c.serviceSubType===activeSub);
+  const acnt=cases.filter(c=>ACT.includes(c.status)).length;
+  const cols=STAGES.map(st=>kbCol(st,cases.filter(c=>c.status===st))).join('');
+  sec.innerHTML=
+    '<div class="page-hdr"><div><div class="page-title">'+s.icon+' '+esc(s.label)+'</div>'
+    +'<div class="page-sub">전체 '+cases.length+'건 · 진행중 '+acnt+'건</div></div>'
+    +'<button class="btn btn-primary" data-action="add-case" data-st="'+esc(key)+'" data-pcl="">+ 케이스 추가</button></div>'
+    +(hasSub?subTabs(key,s.subtypes,activeSub):'')
+    +'<div class="kb-wrap">'+cols+'</div>';
+}
+
+/* ── MODALS ── */
+function openClientModal(cl){
+  const ie=!!cl;
+  document.getElementById('modal-box').innerHTML=
+    '<div class="modal-hdr"><div class="modal-title">'+(ie?'고객 수정':'고객 추가')+'</div>'
+    +'<button class="modal-x" data-action="mc">✕</button></div>'
+    +'<form id="clf" onsubmit="return false">'
+    +(ie?'<input type="hidden" name="id" value="'+esc(cl.id)+'">':'')
+    +'<div class="frow"><div class="fg"><label class="fl req">회사명</label><input class="fi" name="companyName" value="'+esc(cl?.companyName)+'" required></div>'
+    +'<div class="fg"><label class="fl req">담당자명</label><input class="fi" name="contactName" value="'+esc(cl?.contactName)+'" required></div></div>'
+    +'<div class="frow"><div class="fg"><label class="fl">연락처</label><input class="fi" name="phone" value="'+esc(cl?.phone)+'" placeholder="010-0000-0000"></div>'
+    +'<div class="fg"><label class="fl">이메일</label><input class="fi" type="email" name="email" value="'+esc(cl?.email)+'" placeholder="email@example.com"></div></div>'
+    +'<div class="fg"><label class="fl">등록일</label><input class="fi" type="date" name="registeredDate" value="'+(cl?.registeredDate||today())+'"></div>'
+    +'<div class="fg"><label class="fl">메모</label><textarea class="fta" name="memo">'+esc(cl?.memo)+'</textarea></div>'
+    +'<div class="f-actions"><button type="button" class="btn btn-secondary" data-action="mc">취소</button>'
+    +'<button type="button" class="btn btn-primary" id="clf-save">'+(ie?'수정 저장':'고객 추가')+'</button></div></form>';
+  document.getElementById('modal-ov').classList.add('open');
+  document.getElementById('clf-save').onclick=()=>{
+    const f=document.getElementById('clf');
+    if(!f.checkValidity()){f.reportValidity();return;}
+    const fd=new FormData(f);
+    const rec={id:fd.get('id')||gid('c'),companyName:fd.get('companyName').trim(),contactName:fd.get('contactName').trim(),
+      phone:fd.get('phone').trim(),email:fd.get('email').trim(),registeredDate:fd.get('registeredDate'),memo:fd.get('memo').trim()};
+    if(fd.get('id')){const i=St.clients.findIndex(x=>x.id===rec.id);if(i>=0)St.clients[i]=rec;}
+    else St.clients.push(rec);
+    Stor.save();closeModal();render(St.ui.pg);
+  };
+}
+
+function openCaseModal(kase,preType,preCl){
+  const ie=!!kase;
+  const curType=kase?.serviceType||preType||'corp';
+  const curSvc=SVC[curType];
+  const hasSub=curSvc?.subtypes.length>0;
+  const svcOpts=Object.entries(SVC).map(([k,s])=>'<option value="'+k+'"'+(curType===k?' selected':'')+'>'+s.icon+' '+esc(s.label)+'</option>').join('');
+  const subOpts=(type)=>{const sv=SVC[type];return sv?.subtypes.map(st=>'<option value="'+esc(st)+'"'+(kase?.serviceSubType===st?' selected':'')+'>'+esc(st)+'</option>').join('')||''};
+  const clOpts=St.clients.map(c=>'<option value="'+esc(c.id)+'"'+((kase?.clientId||preCl)===c.id?' selected':'')+'>'+esc(c.companyName)+' ('+esc(c.contactName)+')</option>').join('');
+  const stOpts=STAGES.map(s=>'<option value="'+esc(s)+'"'+((kase?.status||'문의접수')===s?' selected':'')+'>'+esc(s)+'</option>').join('');
+  document.getElementById('modal-box').innerHTML=
+    '<div class="modal-hdr"><div class="modal-title">'+(ie?'케이스 수정':'케이스 추가')+'</div>'
+    +'<button class="modal-x" data-action="mc">✕</button></div>'
+    +'<form id="kf" onsubmit="return false">'
+    +(ie?'<input type="hidden" name="id" value="'+esc(kase.id)+'">':'')
+    +'<div class="fg"><label class="fl req">고객</label><select class="fsel" name="clientId" required><option value="">고객 선택...</option>'+clOpts+'</select></div>'
+    +'<div class="frow"><div class="fg"><label class="fl req">서비스 유형</label><select class="fsel" name="serviceType" id="ms-type">'+svcOpts+'</select></div>'
+    +'<div class="fg" id="sub-grp" style="display:'+(hasSub?'block':'none')+'"><label class="fl">세부 유형</label>'
+    +'<select class="fsel" name="serviceSubType" id="ms-sub"><option value="">선택...</option>'+subOpts(curType)+'</select></div></div>'
+    +'<div class="frow"><div class="fg"><label class="fl req">진행 상태</label><select class="fsel" name="status">'+stOpts+'</select></div>'
+    +'<div class="fg"><label class="fl">수임액 (원)</label><input class="fi" type="number" name="amount" value="'+esc(kase?.amount||'')+'" min="0" placeholder="0"></div></div>'
+    +'<div class="frow"><div class="fg"><label class="fl">시작일</label><input class="fi" type="date" name="startDate" value="'+(kase?.startDate||today())+'"></div>'
+    +'<div class="fg"><label class="fl">종료일</label><input class="fi" type="date" name="endDate" value="'+(kase?.endDate||'')+'"></div></div>'
+    +'<div class="fg"><label class="fl">메모</label><textarea class="fta" name="memo">'+esc(kase?.memo)+'</textarea></div>'
+    +'<div class="f-actions"><button type="button" class="btn btn-secondary" data-action="mc">취소</button>'
+    +'<button type="button" class="btn btn-primary" id="kf-save">'+(ie?'수정 저장':'케이스 추가')+'</button></div></form>';
+  document.getElementById('modal-ov').classList.add('open');
+  document.getElementById('ms-type').onchange=function(){
+    const sv=SVC[this.value];const grp=document.getElementById('sub-grp');const sub=document.getElementById('ms-sub');
+    if(sv?.subtypes.length){grp.style.display='block';sub.innerHTML='<option value="">선택...</option>'+sv.subtypes.map(st=>'<option value="'+esc(st)+'">'+esc(st)+'</option>').join('');}
+    else{grp.style.display='none';sub.innerHTML='';}
+  };
+  document.getElementById('kf-save').onclick=()=>{
+    const f=document.getElementById('kf');
+    if(!f.checkValidity()){f.reportValidity();return;}
+    const fd=new FormData(f);
+    const rec={id:fd.get('id')||gid('k'),clientId:fd.get('clientId'),serviceType:fd.get('serviceType'),
+      serviceSubType:fd.get('serviceSubType')||null,status:fd.get('status'),
+      startDate:fd.get('startDate')||null,endDate:fd.get('endDate')||null,
+      amount:parseInt(fd.get('amount'))||0,memo:fd.get('memo').trim()};
+    if(fd.get('id')){const i=St.cases.findIndex(x=>x.id===rec.id);if(i>=0)St.cases[i]=rec;}
+    else St.cases.push(rec);
+    Stor.save();closeModal();render(St.ui.pg);
+  };
+}
+function openConfirm(msg,fn){
+  document.getElementById('modal-box').innerHTML=
+    '<div class="modal-hdr"><div class="modal-title" style="color:var(--red)">⚠️ 삭제 확인</div>'
+    +'<button class="modal-x" data-action="mc">✕</button></div>'
+    +'<p style="font-size:14px;color:var(--ts);margin-bottom:20px">'+esc(msg)+'</p>'
+    +'<div class="f-actions"><button class="btn btn-secondary" data-action="mc">취소</button>'
+    +'<button class="btn btn-danger" id="conf-ok">삭제 확인</button></div>';
+  document.getElementById('modal-ov').classList.add('open');
+  document.getElementById('conf-ok').onclick=()=>{closeModal();fn();};
+}
+function closeModal(){
+  document.getElementById('modal-ov').classList.remove('open');
+  document.getElementById('modal-box').innerHTML='';
+}
+
+/* ── EVENTS ── */
+function setup(){
+  const app=document.getElementById('app');
+  app.addEventListener('click',e=>{
+    const btn=e.target.closest('[data-action]');if(!btn)return;
+    const act=btn.dataset.action,id=btn.dataset.id;
+    if(act==='add-cl'){openClientModal(null);}
+    else if(act==='edit-cl'){const c=St.clients.find(x=>x.id===id);if(c)openClientModal(c);}
+    else if(act==='del-cl'){
+      const c=St.clients.find(x=>x.id===id);
+      openConfirm((c?c.companyName:'이 고객')+' 및 관련 케이스를 모두 삭제하시겠습니까?',()=>{
+        St.clients=St.clients.filter(x=>x.id!==id);
+        St.cases=St.cases.filter(x=>x.clientId!==id);
+        if(St.ui.expId===id)St.ui.expId=null;
+        Stor.save();render(St.ui.pg);
+      });
+    }
+    else if(act==='expand'){
+      e.stopPropagation();
+      const cid=btn.dataset.id;
+      St.ui.expId=St.ui.expId===cid?null:cid;
+      render('clients');
+    }
+    else if(act==='add-case'){openCaseModal(null,btn.dataset.st||null,btn.dataset.pcl||null);}
+    else if(act==='edit-case'){const c=St.cases.find(x=>x.id===id);if(c)openCaseModal(c);}
+    else if(act==='del-case'){
+      openConfirm('이 케이스를 삭제하시겠습니까?',()=>{
+        St.cases=St.cases.filter(x=>x.id!==id);
+        Stor.save();render(St.ui.pg);
+      });
+    }
+    else if(act==='sub'){
+      const pk=btn.dataset.pk,st=btn.dataset.st;
+      St.ui.sub[pk]=st;render(pk);
+    }
+    else if(act==='mc'){closeModal();}
+  });
+  app.addEventListener('change',e=>{
+    const el=e.target;
+    if(el.dataset.action==='st'){
+      const c=St.cases.find(x=>x.id===el.dataset.cid);if(!c)return;
+      c.status=el.value;
+      if(el.value==='완료'||el.value==='취소')c.endDate=today();else c.endDate=null;
+      Stor.save();render(St.ui.pg);
+    }
+  });
+  app.addEventListener('input',e=>{
+    if(e.target.id==='cli-q'){St.ui.q=e.target.value;render('clients');}
+  });
+  document.getElementById('modal-ov').addEventListener('click',e=>{
+    const btn=e.target.closest('[data-action="mc"]');
+    if(btn||e.target===document.getElementById('modal-ov'))closeModal();
+  });
+  document.querySelectorAll('.nav-item[data-page]').forEach(item=>{
+    item.addEventListener('click',()=>nav(item.dataset.page));
+  });
+}
+
+/* ── INIT ── */
+function init(){Stor.load();setup();render('home');}
+document.addEventListener('DOMContentLoaded',init);
+})();
+</script>
+</body>
+</html>
