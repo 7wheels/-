@@ -160,6 +160,20 @@ const SC={
   '취소':{bg:'rgba(248,81,73,.15)',c:'#F85149'}
 };
 const St={clients:[],cases:[],ui:{pg:'home',q:'',expId:null,sub:{cert:'전체',fund:'전체'}}};
+const DOCS={
+  lab:['사업자등록증','법인등기부등본','연구소 설립 신청서','연구시설 보유 증빙','연구인력 확인 서류 (재직증명서)','연구개발 계획서'],
+  cert:{
+    '벤처기업인증':['사업자등록증','법인등기부등본','최근 2년 재무제표','기술성 평가 자료','벤처기업 확인 신청서'],
+    '메인비즈인증':['사업자등록증','법인등기부등본','최근 3년 재무제표','경영혁신 활동 자료','메인비즈 신청서'],
+    '이노비즈인증':['사업자등록증','법인등기부등본','특허·지식재산권 서류','기술혁신 실적 자료','이노비즈 신청서'],
+    '소부장인증':['사업자등록증','법인등기부등본','소재·부품·장비 관련 증빙','기술 개발 실적','소부장 기업 확인 신청서']
+  }
+};
+function getDocs(c){
+  if(c.serviceType==='lab')return DOCS.lab;
+  if(c.serviceType==='cert'&&c.serviceSubType)return DOCS.cert[c.serviceSubType]||[];
+  return[];
+}
 
 /* ── UTILS ── */
 function gid(p){return p+'_'+Date.now()+'_'+Math.random().toString(36).slice(2,7)}
@@ -220,8 +234,22 @@ function caseCard(c){
   const cl=St.clients.find(x=>x.id===c.clientId)||{companyName:'(미지정)'};
   const memoHtml=c.memo?'<div style="font-size:11px;color:var(--tf);margin-top:6px;padding-top:6px;border-top:1px solid var(--border-sub)">'+esc(c.memo)+'</div>':'';
   const selOpts=STAGES.map(s=>'<option value="'+esc(s)+'"'+(s===c.status?' selected':'')+'>'+esc(s)+'</option>').join('');
+  const memberBadge=c.isMember
+    ?'<span data-action="toggle-member" data-id="'+esc(c.id)+'" title="클릭하여 변경" style="cursor:pointer;font-size:10px;padding:2px 8px;border-radius:10px;background:rgba(63,185,80,.15);color:#3FB950;border:1px solid rgba(63,185,80,.35);font-weight:700;flex-shrink:0">멤버</span>'
+    :'<span data-action="toggle-member" data-id="'+esc(c.id)+'" title="클릭하여 변경" style="cursor:pointer;font-size:10px;padding:2px 8px;border-radius:10px;background:var(--bg-elv);color:var(--tf);border:1px solid var(--border);font-weight:600;flex-shrink:0">비멤버</span>';
+  const docs=getDocs(c);
+  const checked=c.checkedDocs||[];
+  const docHtml=docs.length
+    ?'<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border-sub)">'
+      +'<div style="font-size:10px;font-weight:700;color:var(--tm);letter-spacing:.08em;margin-bottom:5px">📋 준비서류 ('+checked.length+'/'+docs.length+')</div>'
+      +docs.map(d=>{const chk=checked.includes(d);
+        return '<div data-action="toggle-doc" data-id="'+esc(c.id)+'" data-doc="'+esc(d)+'" style="display:flex;align-items:center;gap:6px;padding:3px 0;cursor:pointer;border-radius:4px">'
+          +'<span style="width:13px;height:13px;border:1.5px solid '+(chk?'#3FB950':'var(--border)')+';border-radius:3px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:'+(chk?'rgba(63,185,80,.15)':'transparent')+'">'+(chk?'<span style="color:#3FB950;font-size:9px;line-height:1;font-weight:900">✓</span>':'')+'</span>'
+          +'<span style="font-size:11px;color:'+(chk?'var(--tp)':'var(--tm)')+'">'+esc(d)+'</span>'
+          +'</div>';
+      }).join('')+'</div>':'';
   return '<div class="case-card" data-id="'+esc(c.id)+'">'
-    +'<div class="case-co">'+esc(cl.companyName)+'</div>'
+    +'<div class="case-co" style="display:flex;justify-content:space-between;align-items:center;gap:6px">'+esc(cl.companyName)+memberBadge+'</div>'
     +'<div class="case-meta">'+(c.serviceSubType?stag(c.serviceType,c.serviceSubType):'')
     +'<span style="font-size:11px;color:var(--tf)">'+fd(c.startDate)+'</span></div>'
     +'<div class="case-foot"><span class="case-amt">'+fmt(c.amount)+'</span>'
@@ -229,7 +257,7 @@ function caseCard(c){
     +'<select class="st-sel" data-action="st" data-cid="'+esc(c.id)+'">'+selOpts+'</select>'
     +'<button class="btn btn-sm btn-secondary" data-action="edit-case" data-id="'+esc(c.id)+'">✏️</button>'
     +'<button class="btn btn-sm btn-danger" data-action="del-case" data-id="'+esc(c.id)+'">🗑</button>'
-    +'</div></div>'+memoHtml+'</div>';
+    +'</div></div>'+memoHtml+docHtml+'</div>';
 }
 function kbCol(stage,cases){
   const s=SC[stage];
@@ -411,6 +439,7 @@ function openCaseModal(kase,preType,preCl){
     +'<div class="frow"><div class="fg"><label class="fl">시작일</label><input class="fi" type="date" name="startDate" value="'+(kase?.startDate||today())+'"></div>'
     +'<div class="fg"><label class="fl">종료일</label><input class="fi" type="date" name="endDate" value="'+(kase?.endDate||'')+'"></div></div>'
     +'<div class="fg"><label class="fl">메모</label><textarea class="fta" name="memo">'+esc(kase?.memo)+'</textarea></div>'
+    +'<div class="fg"><label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" name="isMember" style="width:15px;height:15px;accent-color:var(--green)"'+(kase?.isMember?' checked':'')+'>멤버십 고객</label></div>'
     +'<div class="f-actions"><button type="button" class="btn btn-secondary" data-action="mc">취소</button>'
     +'<button type="button" class="btn btn-primary" id="kf-save">'+(ie?'수정 저장':'케이스 추가')+'</button></div></form>';
   document.getElementById('modal-ov').classList.add('open');
@@ -423,10 +452,12 @@ function openCaseModal(kase,preType,preCl){
     const f=document.getElementById('kf');
     if(!f.checkValidity()){f.reportValidity();return;}
     const fd=new FormData(f);
+    const existingCase=fd.get('id')?St.cases.find(x=>x.id===fd.get('id')):null;
     const rec={id:fd.get('id')||gid('k'),clientId:fd.get('clientId'),serviceType:fd.get('serviceType'),
       serviceSubType:fd.get('serviceSubType')||null,status:fd.get('status'),
       startDate:fd.get('startDate')||null,endDate:fd.get('endDate')||null,
-      amount:parseInt(fd.get('amount'))||0,memo:fd.get('memo').trim()};
+      amount:parseInt(fd.get('amount'))||0,memo:fd.get('memo').trim(),
+      isMember:fd.get('isMember')==='on',checkedDocs:existingCase?.checkedDocs||[]};
     if(fd.get('id')){const i=St.cases.findIndex(x=>x.id===rec.id);if(i>=0)St.cases[i]=rec;}
     else St.cases.push(rec);
     Stor.save();closeModal();render(St.ui.pg);
@@ -481,6 +512,20 @@ function setup(){
     else if(act==='sub'){
       const pk=btn.dataset.pk,st=btn.dataset.st;
       St.ui.sub[pk]=st;render(pk);
+    }
+    else if(act==='toggle-member'){
+      const c=St.cases.find(x=>x.id===id);
+      if(c){c.isMember=!c.isMember;Stor.save();render(St.ui.pg);}
+    }
+    else if(act==='toggle-doc'){
+      const c=St.cases.find(x=>x.id===id);
+      if(c){
+        if(!c.checkedDocs)c.checkedDocs=[];
+        const doc=btn.dataset.doc;
+        const idx=c.checkedDocs.indexOf(doc);
+        if(idx>=0)c.checkedDocs.splice(idx,1);else c.checkedDocs.push(doc);
+        Stor.save();render(St.ui.pg);
+      }
     }
     else if(act==='mc'){closeModal();}
   });
