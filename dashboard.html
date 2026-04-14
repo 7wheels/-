@@ -254,22 +254,24 @@ const Stor={
       {id:'c07',companyName:'드림소프트웨어',contactName:'오준서',phone:'010-8901-2345',email:'junseo@dreamsoft.kr',registeredDate:doff(-5),memo:'소부장 해당여부 검토'}
     ];
     St.cases=[
-      {id:'k01',clientId:'c01',serviceType:'corp',serviceSubType:null,status:'완료',startDate:doff(-40),endDate:doff(-10),amount:3000000,memo:''},
-      {id:'k02',clientId:'c06',serviceType:'corp',serviceSubType:null,status:'진행중',startDate:doff(-8),endDate:null,amount:2500000,memo:''},
-      {id:'k03',clientId:'c01',serviceType:'lab',serviceSubType:null,status:'검토중',startDate:doff(-5),endDate:null,amount:4000000,memo:'기업부설연구소'},
-      {id:'k04',clientId:'c04',serviceType:'lab',serviceSubType:null,status:'진행중',startDate:doff(-20),endDate:null,amount:3500000,memo:''},
-      {id:'k05',clientId:'c02',serviceType:'cert',serviceSubType:'벤처기업인증',status:'완료',startDate:doff(-50),endDate:doff(-15),amount:2000000,memo:''},
-      {id:'k06',clientId:'c03',serviceType:'cert',serviceSubType:'이노비즈인증',status:'진행중',startDate:doff(-25),endDate:null,amount:2500000,memo:''},
-      {id:'k07',clientId:'c04',serviceType:'cert',serviceSubType:'메인비즈인증',status:'검토중',startDate:doff(-12),endDate:null,amount:2000000,memo:''},
-      {id:'k08',clientId:'c07',serviceType:'cert',serviceSubType:'소부장인증',status:'문의접수',startDate:doff(-3),endDate:null,amount:0,memo:''},
-      {id:'k09',clientId:'c02',serviceType:'fund',serviceSubType:'기보',status:'진행중',startDate:doff(-22),endDate:null,amount:5000000,memo:'기술보증 5천'},
-      {id:'k10',clientId:'c05',serviceType:'fund',serviceSubType:'신보',status:'검토중',startDate:doff(-7),endDate:null,amount:3000000,memo:''},
-      {id:'k11',clientId:'c03',serviceType:'fund',serviceSubType:'중진공',status:'문의접수',startDate:doff(-2),endDate:null,amount:0,memo:''},
-      {id:'k12',clientId:'c07',serviceType:'fund',serviceSubType:'재단',status:'진행중',startDate:doff(-18),endDate:null,amount:2000000,memo:'지역신보'},
-      {id:'k13',clientId:'c05',serviceType:'training',serviceSubType:null,status:'진행중',startDate:doff(-14),endDate:null,amount:1500000,memo:''},
-      {id:'k14',clientId:'c02',serviceType:'training',serviceSubType:null,status:'완료',startDate:doff(-60),endDate:doff(-30),amount:1200000,memo:''},
-      {id:'k15',clientId:'c06',serviceType:'prediger',serviceSubType:null,status:'완료',startDate:doff(-35),endDate:doff(-20),amount:1500000,memo:''},
-      {id:'k16',clientId:'c03',serviceType:'prediger',serviceSubType:null,status:'문의접수',startDate:doff(-1),endDate:null,amount:0,memo:''}
+      {id:'k01',clientId:'c01',serviceType:'corp',serviceSubType:null,status:'완료',startDate:doff(-40),endDate:doff(-10),amount:3000000,memo:'',isMember:true,checkedDocs:[]},
+      {id:'k02',clientId:'c06',serviceType:'corp',serviceSubType:null,status:'진행중',startDate:doff(-8),endDate:null,amount:2500000,memo:'',isMember:false,checkedDocs:[]},
+      {id:'k03',clientId:'c01',serviceType:'lab',serviceSubType:null,status:'검토중',startDate:doff(-5),endDate:null,amount:4000000,memo:'기업부설연구소',isMember:false,checkedDocs:[]},
+      {id:'k04',clientId:'c04',serviceType:'lab',serviceSubType:null,status:'진행중',startDate:doff(-20),endDate:null,amount:3500000,memo:'',isMember:false,checkedDocs:[]},
+      {id:'k05',clientId:'c02',serviceType:'cert',serviceSubType:'벤처기업인증',status:'완료',startDate:doff(-50),endDate:doff(-15),amount:2000000,memo:'',isMember:true,checkedDocs:[]},
+      {id:'k06',clientId:'c03',serviceType:'cert',serviceSubType:'이노비즈인증',status:'진행중',startDate:doff(-25),endDate:null,amount:2500000,memo:'',isMember:false,checkedDocs:[]},
+      {id:'k07',clientId:'c04',serviceType:'cert',serviceSubType:'메인비즈인증',status:'검토중',startDate:doff(-12),endDate:null,amount:2000000,memo:'',isMember:false,checkedDocs:[]},
+      {id:'k08',clientId:'c07',serviceType:'cert',serviceSubType:'소부장인증',status:'문의접수',startDate:doff(-3),endDate:null,amount:0,memo:'',isMember:false,checkedDocs:[]},
+      {id:'k09',clientId:'c02',serviceType:'fund',serviceSubType:'기보',status:'진행중',startDate:doff(-22),endDate:null,amount:5000000,memo:'기술보증 5천',isMember:false,checkedDocs:[]},
+      {id:'k10',clientId:'c05',serviceType:'fund',serviceSubType:'신보',status:'검토중',startDate:doff(-7),endDate:null,amount:3000000,memo:'',isMember:false,checkedDocs:[]},
+      {id:'k11',clientId:'c03',serviceType:'fund',serviceSubType:'중진공',status:'문의접수',startDate:doff(-2),endDate:null,amount:0,memo:'',isMember:false,checkedDocs:[]},
+      {id:'k12',clientId:'c07',serviceType:'fund',serviceSubType:'재단',status:'진행중',startDate:doff(-18),endDate:null,amount:2000000,memo:'지역신보',isMember:false,checkedDocs:[]},
+      {id:'k13',clientId:'c05',serviceType:'training',serviceSubType:null,status:'진행중',startDate:doff(-14),endDate:null,amount:1500000,memo:'',isMember:true,checkedDocs:[]},
+      {id:'k14',clientId:'c02',serviceType:'training',serviceSubType:null,status:'완료',startDate:doff(-60),endDate:doff(-30),amount:1200000,memo:'',isMember:false,checkedDocs:[]},
+      {id:'k15',clientId:'c06',serviceType:'prediger',serviceSubType:null,status:'완료',startDate:doff(-35),endDate:doff(-20),amount:1500000,memo:'',isMember:false,checkedDocs:[]},
+      {id:'k16',clientId:'c03',serviceType:'prediger',serviceSubType:null,status:'문의접수',startDate:doff(-1),endDate:null,amount:0,memo:'',isMember:false,checkedDocs:[]},
+      {id:'k17',clientId:'c04',serviceType:'member',serviceSubType:null,status:'진행중',startDate:doff(-30),endDate:null,amount:500000,memo:'멤버십 가입',isMember:true,checkedDocs:[]},
+      {id:'k18',clientId:'c06',serviceType:'member',serviceSubType:null,status:'진행중',startDate:doff(-20),endDate:null,amount:500000,memo:'멤버십 가입',isMember:true,checkedDocs:[]}
     ];
     this.save();
   }
@@ -409,7 +411,7 @@ function pageMail(){
     +'<div class="mail-bot">'
     +'<div class="mail-bot-info">'+botInfo+'</div>'
     +'<button class="btn btn-secondary" data-action="mail-copy" style="font-size:12px">📋 이메일 복사</button>'
-    +'<button class="btn btn-primary" data-action="mail-send"'+(selWithEmail.length?'':' disabled')+' style="font-size:12px">📧 메일 발송</button>'
+    +'<button class="btn btn-primary" data-action="mail-send" style="font-size:12px">📧 메일 발송</button>'
     +'</div>'
     +'</div>'
     +'</div>'
@@ -452,7 +454,7 @@ function pageLecture(){
       +'<td>'+dLabel+'</td>'
       +'<td style="max-width:260px">'+esc(l.content||'-')+'</td>'
       +'<td style="color:var(--gold-dim);font-weight:600">'+fmt(l.fee)+'</td>'
-      +'<td onclick="event.stopPropagation()" style="white-space:nowrap">'
+      +'<td style="white-space:nowrap">'
       +'<button class="btn btn-sm btn-secondary" data-action="edit-lec" data-id="'+esc(l.id)+'">✏️</button> '
       +'<button class="btn btn-sm btn-danger" data-action="del-lec" data-id="'+esc(l.id)+'">🗑</button></td></tr>';
   }
@@ -791,7 +793,7 @@ function setup(){
     else if(act==='mail-send'){
       const mem=St.clients.filter(cl=>St.cases.some(c=>c.clientId===cl.id&&(c.isMember||c.serviceType==='member')));
       const sel=mem.filter(cl=>St.mail.sel.has(cl.id)&&cl.email);
-      if(!sel.length)return;
+      if(!sel.length){alert('수신자를 선택해 주세요.\n이메일이 등록된 멤버십 고객을 체크해 주세요.');return;}
       const subj=document.getElementById('mail-subj')?.value||'[히어컴퍼니] 정부지원사업 리포트 안내';
       const body=(document.getElementById('mail-body')?.value||'')+(St.mail.file?'\n\n[첨부파일: '+St.mail.file+']':'');
       const emails=sel.map(cl=>cl.email);
