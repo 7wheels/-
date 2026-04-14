@@ -476,7 +476,9 @@ function pageSvc(key){
   sec.innerHTML=
     '<div class="page-hdr"><div><div class="page-title">'+s.icon+' '+esc(s.label)+'</div>'
     +'<div class="page-sub">전체 '+cases.length+'건 · 진행중 '+acnt+'건</div></div>'
-    +'<button class="btn btn-primary" data-action="add-case" data-st="'+esc(key)+'" data-pcl="">+ 케이스 추가</button></div>'
+    +'<div style="display:flex;gap:8px">'
+    +(key==='member'?'<a href="mail-sender.html" target="_blank" class="btn btn-secondary" style="text-decoration:none;font-size:12px">📧 메일 발송</a>':'')
+    +'<button class="btn btn-primary" data-action="add-case" data-st="'+esc(key)+'" data-pcl="">+ 케이스 추가</button></div></div>'
     +(hasSub?subTabs(key,s.subtypes,activeSub):'')
     +'<div class="kb-wrap">'+cols+'</div>';
 }
