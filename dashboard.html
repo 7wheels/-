@@ -352,7 +352,7 @@ function pageMail(){
     const hasEmail=!!cl.email;
     return '<div class="mci'+(on?' on':'')+(hasEmail?'':' no-email')+'" data-action="'+(hasEmail?'mail-toggle':'')+'" data-id="'+esc(cl.id)+'">'
       +'<input type="checkbox" class="mci-chk"'+(on?' checked':'')+(hasEmail?'':' disabled')
-      +' onclick="event.stopPropagation()"'+(hasEmail?' data-action="mail-toggle" data-id="'+esc(cl.id)+'"':'')+' >'
+      +(hasEmail?' data-action="mail-toggle" data-id="'+esc(cl.id)+'"':'')+' >'
       +'<div style="flex:1;min-width:0">'
       +'<div class="mci-name">'+esc(cl.companyName)+'</div>'
       +'<div class="mci-contact">'+esc(cl.contactName)+'</div>'
@@ -796,17 +796,18 @@ function setup(){
       const body=(document.getElementById('mail-body')?.value||'')+(St.mail.file?'\n\n[첨부파일: '+St.mail.file+']':'');
       const emails=sel.map(cl=>cl.email);
       const encS=encodeURIComponent(subj),encB=encodeURIComponent(body);
-      const send=(batch)=>{
-        const m='mailto:'+encodeURIComponent(batch[0])
-          +(batch.length>1?'?bcc='+encodeURIComponent(batch.slice(1).join(','))+'&':'?')
-          +'subject='+encS+'&body='+encB;
-        window.location.href=m;
+      /* 이메일 주소는 인코딩 금지 — @ 그대로 유지, anchor.click() 방식 사용 */
+      const openMailto=(batch)=>{
+        const a=document.createElement('a');
+        a.href='mailto:?bcc='+batch.join(',')+'\u0026subject='+encS+'\u0026body='+encB;
+        document.body.appendChild(a);a.click();
+        setTimeout(()=>document.body.removeChild(a),200);
       };
-      if(encS.length+encB.length+emails.join(',').length>3500){
+      if(emails.length>8){
         const parts=[];for(let i=0;i<emails.length;i+=8)parts.push(emails.slice(i,i+8));
-        if(!confirm(emails.length+'명 수신자를 '+parts.length+'번으로 나눠 발송합니다.\n확인을 누르면 순서대로 열립니다.'))return;
-        parts.forEach((b,i)=>setTimeout(()=>send(b),i*900));
-      } else {send(emails);}
+        if(!confirm(emails.length+'명을 '+parts.length+'번으로 나눠 발송합니다.\n확인을 누를 때마다 이메일 클라이언트가 열립니다.'))return;
+        parts.forEach((b,i)=>setTimeout(()=>openMailto(b),i*1000));
+      } else {openMailto(emails);}
     }
     else if(act==='add-lec'){openLectureModal(null);}
     else if(act==='edit-lec'){const l=St.lectures.find(x=>x.id===id);if(l)openLectureModal(l);}
