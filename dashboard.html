@@ -126,6 +126,8 @@ body{font-family:var(--font);background:var(--bg-base);color:var(--tp);min-heigh
     <li class="nav-item" data-page="fund"><span class="nav-icon">💰</span><span class="nav-label">정책자금</span></li>
     <li class="nav-item" data-page="training"><span class="nav-icon">🎓</span><span class="nav-label">기업훈련지원금</span></li>
     <li class="nav-item" data-page="prediger"><span class="nav-icon">📊</span><span class="nav-label">프레디저 기업진단</span></li>
+    <li class="nav-divider">멤버십</li>
+    <li class="nav-item" data-page="member"><span class="nav-icon">👑</span><span class="nav-label">멤버십</span></li>
   </ul>
 </nav>
 <main id="app">
@@ -137,6 +139,7 @@ body{font-family:var(--font);background:var(--bg-base);color:var(--tp);min-heigh
   <section id="page-fund" class="page"></section>
   <section id="page-training" class="page"></section>
   <section id="page-prediger" class="page"></section>
+  <section id="page-member" class="page"></section>
 </main>
 <div id="modal-ov"><div id="modal-box"></div></div>
 <script>
@@ -148,7 +151,8 @@ const SVC={
   cert:{label:'기업인증',icon:'🏆',color:'#D97706',subtypes:['벤처기업인증','메인비즈인증','이노비즈인증','소부장인증']},
   fund:{label:'정책자금',icon:'💰',color:'#059669',subtypes:['기보','신보','재단','중진공','소진공','진흥원']},
   training:{label:'기업훈련지원금',icon:'🎓',color:'#2563EB',subtypes:[]},
-  prediger:{label:'프레디저 기업진단',icon:'📊',color:'#9333EA',subtypes:[]}
+  prediger:{label:'프레디저 기업진단',icon:'📊',color:'#9333EA',subtypes:[]},
+  member:{label:'멤버십',icon:'👑',color:'#C8A96E',subtypes:[]}
 };
 const STAGES=['문의접수','검토중','진행중','완료','취소'];
 const ACT=['문의접수','검토중','진행중'];
@@ -168,12 +172,14 @@ const DOCS={
     '이노비즈인증':['사업자등록증','법인등기부등본','특허·지식재산권 서류','기술혁신 실적 자료','이노비즈 신청서'],
     '소부장인증':['사업자등록증','법인등기부등본','소재·부품·장비 관련 증빙','기술 개발 실적','소부장 기업 확인 신청서']
   },
-  training:['HRD4U 가입/신청','HRD-net에 공동인증서 등록','고용24에 기업회원 가입/훈련기관 등록','커리큘럼 작성/승인','공단 실사/줌미팅','실시신고 (행정지원시스템)','결과보고서 작성/결과보고','수당신청']
+  training:['HRD4U 가입/신청','HRD-net에 공동인증서 등록','고용24에 기업회원 가입/훈련기관 등록','커리큘럼 작성/승인','공단 실사/줌미팅','실시신고 (행정지원시스템)','결과보고서 작성/결과보고','수당신청'],
+  member:['프리미엄정관 제공','기업훈련지원금 1회 무료지원','정책자금 사업계획서 제공','정부지원사업 리포트 제공','기업맞춤형 퍼널기획서 제공']
 };
 function getDocs(c){
   if(c.serviceType==='lab')return DOCS.lab;
   if(c.serviceType==='cert'&&c.serviceSubType)return DOCS.cert[c.serviceSubType]||[];
   if(c.serviceType==='training')return DOCS.training;
+  if(c.serviceType==='member')return DOCS.member;
   return[];
 }
 
