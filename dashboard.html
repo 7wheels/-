@@ -167,11 +167,13 @@ const DOCS={
     '메인비즈인증':['사업자등록증','법인등기부등본','최근 3년 재무제표','경영혁신 활동 자료','메인비즈 신청서'],
     '이노비즈인증':['사업자등록증','법인등기부등본','특허·지식재산권 서류','기술혁신 실적 자료','이노비즈 신청서'],
     '소부장인증':['사업자등록증','법인등기부등본','소재·부품·장비 관련 증빙','기술 개발 실적','소부장 기업 확인 신청서']
-  }
+  },
+  training:['HRD4U 가입/신청','HRD-net에 공동인증서 등록','고용24에 기업회원 가입/훈련기관 등록','커리큘럼 작성/승인','공단 실사/줌미팅','실시신고 (행정지원시스템)','결과보고서 작성/결과보고','수당신청']
 };
 function getDocs(c){
   if(c.serviceType==='lab')return DOCS.lab;
   if(c.serviceType==='cert'&&c.serviceSubType)return DOCS.cert[c.serviceSubType]||[];
+  if(c.serviceType==='training')return DOCS.training;
   return[];
 }
 
