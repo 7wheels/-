@@ -305,8 +305,9 @@ function pageHome(){
     const cl=St.clients.find(x=>x.id===c.clientId)||{companyName:'(미지정)'};
     const s=SVC[c.serviceType];
     const dot=SC[c.status];
+    const mBadge=c.isMember?'<span style="font-size:10px;padding:1px 7px;border-radius:10px;background:rgba(63,185,80,.15);color:#3FB950;border:1px solid rgba(63,185,80,.35);font-weight:700;margin-left:5px;vertical-align:middle">멤버</span>':'';
     return '<div class="act-item"><div class="act-dot" style="background:'+dot.c+'"></div>'
-      +'<div><div class="act-txt"><strong>'+esc(cl.companyName)+'</strong> · '+(s?s.icon+' '+esc(s.label):'')+' '+(c.serviceSubType?'('+esc(c.serviceSubType)+') ':'')+sbadge(c.status)+'</div>'
+      +'<div><div class="act-txt"><strong>'+esc(cl.companyName)+'</strong>'+mBadge+' · '+(s?s.icon+' '+esc(s.label):'')+' '+(c.serviceSubType?'('+esc(c.serviceSubType)+') ':'')+sbadge(c.status)+'</div>'
       +'<div class="act-dt">'+fd(c.startDate)+'</div></div></div>';
   }).join('')||'<div style="color:var(--tf);font-size:13px;padding:12px 0">최근 활동 없음</div>';
 
@@ -340,17 +341,22 @@ function pageClients(){
     if(expanded){
       const cr=kk.length?kk.map(c=>{
         const s=SVC[c.serviceType];
-        return '<tr><td>'+(s?s.icon+' '+esc(s.label):'')+(c.serviceSubType?' ('+esc(c.serviceSubType)+')':'')+'</td><td>'+sbadge(c.status)+'</td><td>'+fd(c.startDate)+'</td><td>'+fmt(c.amount)+'</td>'
+        const mb=c.isMember?'<span style="font-size:10px;padding:1px 7px;border-radius:10px;background:rgba(63,185,80,.15);color:#3FB950;border:1px solid rgba(63,185,80,.35);font-weight:700">멤버</span>':'<span style="color:var(--tf)">-</span>';
+        return '<tr><td>'+(s?s.icon+' '+esc(s.label):'')+(c.serviceSubType?' ('+esc(c.serviceSubType)+')':'')+'</td><td>'+sbadge(c.status)+'</td><td>'+mb+'</td><td>'+fd(c.startDate)+'</td><td>'+fmt(c.amount)+'</td>'
           +'<td><button class="btn btn-sm btn-secondary" data-action="edit-case" data-id="'+esc(c.id)+'">수정</button> <button class="btn btn-sm btn-danger" data-action="del-case" data-id="'+esc(c.id)+'">삭제</button></td></tr>';
-      }).join(''):'<tr><td colspan="5" style="text-align:center;color:var(--tf);padding:10px">케이스 없음</td></tr>';
-      expHtml='<tr class="exp-row"><td colspan="7">'
+      }).join(''):'<tr><td colspan="6" style="text-align:center;color:var(--tf);padding:10px">케이스 없음</td></tr>';
+      expHtml='<tr class="exp-row"><td colspan="8">'
         +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'
         +'<span style="font-size:12px;font-weight:700;color:var(--tm)">케이스 목록 ('+kk.length+'건)</span>'
         +'<button class="btn btn-sm btn-primary" data-action="add-case" data-st="" data-pcl="'+esc(cl.id)+'">+ 케이스 추가</button></div>'
         +'<table style="width:100%;font-size:12px;border-collapse:collapse"><thead><tr style="color:var(--tf)">'
-        +'<th style="padding:4px 8px;text-align:left">서비스</th><th style="padding:4px 8px;text-align:left">상태</th><th style="padding:4px 8px;text-align:left">시작일</th><th style="padding:4px 8px;text-align:left">수임액</th><th style="padding:4px 8px;text-align:left">액션</th>'
+        +'<th style="padding:4px 8px;text-align:left">서비스</th><th style="padding:4px 8px;text-align:left">상태</th><th style="padding:4px 8px;text-align:left">멤버십</th><th style="padding:4px 8px;text-align:left">시작일</th><th style="padding:4px 8px;text-align:left">수임액</th><th style="padding:4px 8px;text-align:left">액션</th>'
         +'</tr></thead><tbody>'+cr+'</tbody></table></td></tr>';
     }
+    const isMember=kk.some(c=>c.isMember);
+    const mCell=isMember
+      ?'<span style="font-size:11px;padding:2px 9px;border-radius:10px;background:rgba(63,185,80,.15);color:#3FB950;border:1px solid rgba(63,185,80,.35);font-weight:700">멤버</span>'
+      :'<span style="font-size:11px;color:var(--tf)">-</span>';
     return '<tr class="cli-row" data-action="expand" data-id="'+esc(cl.id)+'">'
       +'<td><span class="co-name">'+esc(cl.companyName)+'</span></td>'
       +'<td>'+esc(cl.contactName)+'</td>'
@@ -358,6 +364,7 @@ function pageClients(){
       +'<td>'+esc(cl.email)+'</td>'
       +'<td>'+fd(cl.registeredDate)+'</td>'
       +'<td><span style="font-weight:700;color:'+(acnt>0?'var(--blue)':'var(--tf)')+'">'+( acnt>0?acnt+'건 진행':kk.length+'건')+'</span></td>'
+      +'<td>'+mCell+'</td>'
       +'<td><button class="btn btn-sm btn-secondary" data-action="edit-cl" data-id="'+esc(cl.id)+'">수정</button> '
       +'<button class="btn btn-sm btn-danger" data-action="del-cl" data-id="'+esc(cl.id)+'">삭제</button></td>'
       +'</tr>'+expHtml;
@@ -368,8 +375,8 @@ function pageClients(){
     +'<button class="btn btn-primary" data-action="add-cl">+ 고객 추가</button></div>'
     +'<div class="search-bar"><input type="text" class="search-inp" id="cli-q" placeholder="회사명, 담당자명으로 검색..." value="'+esc(St.ui.q)+'"></div>'
     +'<div class="card" style="padding:0;overflow:hidden"><table class="cli-tbl">'
-    +'<thead><tr><th>회사명</th><th>담당자</th><th>연락처</th><th>이메일</th><th>등록일</th><th>진행상황</th><th>액션</th></tr></thead>'
-    +'<tbody>'+(rows||'<tr><td colspan="7" style="text-align:center;color:var(--tf);padding:30px">고객이 없습니다</td></tr>')+'</tbody></table></div>';
+    +'<thead><tr><th>회사명</th><th>담당자</th><th>연락처</th><th>이메일</th><th>등록일</th><th>진행상황</th><th>멤버십</th><th>액션</th></tr></thead>'
+    +'<tbody>'+(rows||'<tr><td colspan="8" style="text-align:center;color:var(--tf);padding:30px">고객이 없습니다</td></tr>')+'</tbody></table></div>';
 }
 
 function pageSvc(key){
