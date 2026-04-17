@@ -339,31 +339,32 @@ function render(pg){
 
 function pageMail(){
   const sec=document.getElementById('page-mail');
-  const memberClients=St.clients.filter(cl=>St.cases.some(c=>c.clientId===cl.id&&(c.isMember||c.serviceType==='member')));
+  const hasMember=cl=>St.cases.some(c=>c.clientId===cl.id&&(c.isMember||c.serviceType==='member'));
+  /* 이메일 있는 모든 고객 표시 — 멤버 우선 정렬 */
+  const allWithEmail=St.clients.filter(cl=>cl.email).sort((a,b)=>hasMember(b)-hasMember(a));
   const sel=St.mail.sel;
-  const selWithEmail=memberClients.filter(cl=>sel.has(cl.id)&&cl.email);
+  const selList=allWithEmail.filter(cl=>sel.has(cl.id));
 
   /* 수신자 태그 */
-  const rcptHtml=selWithEmail.length
-    ?selWithEmail.map(cl=>'<span class="rtag">'+esc(cl.email)+'<button class="rtag-rm" data-action="mail-remove" data-id="'+esc(cl.id)+'" title="제거">✕</button></span>').join('')
-    :'<span style="font-size:12px;color:var(--tf)">왼쪽에서 고객을 선택하세요</span>';
+  const rcptHtml=selList.length
+    ?selList.map(cl=>'<span class="rtag">'+esc(cl.email)+'<button class="rtag-rm" data-action="mail-remove" data-id="'+esc(cl.id)+'" title="제거">✕</button></span>').join('')
+    :'<span style="font-size:12px;color:var(--tf)">왼쪽에서 수신할 고객을 선택하세요</span>';
 
   /* 고객 목록 */
-  const listHtml=memberClients.length?memberClients.map(cl=>{
+  const listHtml=allWithEmail.length?allWithEmail.map(cl=>{
     const on=sel.has(cl.id);
-    const hasEmail=!!cl.email;
-    return '<div class="mci'+(on?' on':'')+(hasEmail?'':' no-email')+'" data-action="'+(hasEmail?'mail-toggle':'')+'" data-id="'+esc(cl.id)+'">'
-      +'<input type="checkbox" class="mci-chk"'+(on?' checked':'')+(hasEmail?'':' disabled')
-      +(hasEmail?' data-action="mail-toggle" data-id="'+esc(cl.id)+'"':'')+' >'
+    const mem=hasMember(cl);
+    return '<div class="mci'+(on?' on':'')+'" data-action="mail-toggle" data-id="'+esc(cl.id)+'">'
+      +'<input type="checkbox" class="mci-chk"'+(on?' checked':'')+' data-action="mail-toggle" data-id="'+esc(cl.id)+'">'
       +'<div style="flex:1;min-width:0">'
       +'<div class="mci-name">'+esc(cl.companyName)+'</div>'
       +'<div class="mci-contact">'+esc(cl.contactName)+'</div>'
-      +(hasEmail?'<div class="mci-email">'+esc(cl.email)+'</div>':'<div class="mci-noemail">⚠ 이메일 없음</div>')
+      +'<div class="mci-email">'+esc(cl.email)+'</div>'
       +'</div>'
-      +'<span class="mbadge" style="font-size:10px;padding:1px 6px;border-radius:10px;background:rgba(63,185,80,.15);color:#3FB950;border:1px solid rgba(63,185,80,.35);font-weight:700">멤버</span>'
+      +(mem?'<span style="font-size:10px;padding:1px 6px;border-radius:10px;background:rgba(63,185,80,.15);color:#3FB950;border:1px solid rgba(63,185,80,.35);font-weight:700">멤버</span>':'')
       +'</div>';
   }).join('')
-  :'<div style="text-align:center;color:var(--tf);font-size:13px;padding:20px 10px">멤버십 고객이 없습니다.<br><small>케이스에 멤버십을 설정해 주세요.</small></div>';
+  :'<div style="text-align:center;color:var(--tf);font-size:13px;padding:20px 10px">이메일이 등록된 고객이 없습니다.</div>';
 
   const fileBar=St.mail.file
     ?'<div class="file-info-bar show"><span style="font-size:18px">📄</span>'
@@ -371,35 +372,30 @@ function pageMail(){
       +'<button class="file-info-rm" data-action="mail-rm-file">✕</button></div>'
     :'';
 
-  const botInfo=selWithEmail.length
-    ?'<b>'+selWithEmail.length+'명</b> 선택됨'
-    :'<b>0명</b> 선택됨';
+  const allOn=allWithEmail.length>0&&allWithEmail.every(cl=>sel.has(cl.id));
+  const botInfo='<b>'+selList.length+'명</b> 선택됨';
 
   sec.innerHTML=
     '<div class="page-hdr"><div><div class="page-title">📧 메일 발송</div>'
-    +'<div class="page-sub">멤버십 고객에게 파일 발송</div></div></div>'
-    +'<div class="mail-notice"><b>📧 발송 방법</b><br>'
-    +'① 수신자 선택 → ② 파일 업로드 → ③ 제목·본문 확인 → ④ <b>메일 발송</b> 클릭<br>'
-    +'이메일 클라이언트(Outlook·Gmail 등)가 열리며 수신자·제목·본문이 자동 입력됩니다.<br>'
-    +'<b>파일을 이메일 클라이언트에서 직접 첨부</b>한 후 발송하세요.</div>'
+    +'<div class="page-sub">고객에게 파일 및 정보 발송</div></div></div>'
+    +'<div class="mail-notice">💡 <b>발송 방법</b>: ① 왼쪽에서 수신자 체크 → ② 제목·본문 작성 → ③ <b>메일 발송</b> 클릭 → 이메일 클라이언트(Outlook·Gmail·네이버 메일 등)가 자동으로 열립니다.<br>'
+    +'이메일 클라이언트에서 파일을 첨부한 후 발송하세요. 클라이언트가 열리지 않으면 <b>📋 이메일 복사</b>를 눌러 수동으로 보내주세요.</div>'
     +'<div class="mail-wrap">'
-    /* 왼쪽: 수신자 */
     +'<div class="mail-list-card">'
-    +'<div class="mail-list-hdr"><span>멤버십 고객 ('+memberClients.length+'명)</span>'
-    +'<button class="mail-toggle-all" data-action="mail-toggle-all">전체 '+(sel.size===memberClients.filter(c=>c.email).length?'해제':'선택')+'</button></div>'
+    +'<div class="mail-list-hdr"><span>고객 목록 ('+allWithEmail.length+'명)</span>'
+    +'<button class="mail-toggle-all" data-action="mail-toggle-all">'+(allOn?'전체 해제':'전체 선택')+'</button></div>'
     +'<div class="mail-client-list">'+listHtml+'</div>'
     +'</div>'
-    /* 오른쪽: 작성 */
     +'<div>'
     +'<div class="card" style="margin-bottom:14px">'
-    +'<div style="font-size:11px;font-weight:700;color:var(--tf);letter-spacing:.08em;margin-bottom:12px">📎 첨부 파일</div>'
+    +'<div style="font-size:11px;font-weight:700;color:var(--tf);letter-spacing:.08em;margin-bottom:12px">📎 첨부 파일 (선택)</div>'
     +'<div class="file-drop" id="mail-file-drop">'
     +'<input type="file" id="mail-file-input">'
     +'<div style="font-size:24px;margin-bottom:7px">📄</div>'
     +'<div style="font-size:12px;color:var(--tm)">클릭하거나 파일을 드래그하세요<br><b style="color:var(--gold-mid)">PDF · DOCX · XLSX · HWP</b> 등 모든 형식</div>'
     +'</div>'+fileBar+'</div>'
     +'<div class="card" style="margin-bottom:14px">'
-    +'<div style="font-size:11px;font-weight:700;color:var(--tf);letter-spacing:.08em;margin-bottom:12px">👥 수신자</div>'
+    +'<div style="font-size:11px;font-weight:700;color:var(--tf);letter-spacing:.08em;margin-bottom:12px">👥 선택된 수신자</div>'
     +'<div class="rcpt-wrap">'+rcptHtml+'</div>'
     +'</div>'
     +'<div class="card">'
@@ -407,7 +403,7 @@ function pageMail(){
     +'<div class="fg"><label class="fl">제목</label>'
     +'<input class="fi" id="mail-subj" value="[히어컴퍼니] 정부지원사업 리포트 안내"></div>'
     +'<div class="fg"><label class="fl">본문</label>'
-    +'<textarea class="fta" id="mail-body" style="min-height:140px">안녕하세요, 히어컴퍼니입니다.\n\n멤버십 고객사 여러분께 이번 달 정부지원사업 리포트를 전달드립니다.\n\n첨부 파일을 확인하시어 사업 계획에 활용하시기 바랍니다.\n\n감사합니다.\n히어컴퍼니 드림</textarea></div>'
+    +'<textarea class="fta" id="mail-body" style="min-height:140px"></textarea></div>'
     +'<div class="mail-bot">'
     +'<div class="mail-bot-info">'+botInfo+'</div>'
     +'<button class="btn btn-secondary" data-action="mail-copy" style="font-size:12px">📋 이메일 복사</button>'
@@ -416,6 +412,10 @@ function pageMail(){
     +'</div>'
     +'</div>'
     +'</div>';
+
+  /* textarea 기본 본문 (innerHTML \n 방지 — .value로 직접 설정) */
+  const ta=document.getElementById('mail-body');
+  if(ta&&!ta.dataset.edited)ta.value='안녕하세요, 히어컴퍼니입니다.\n\n이번 달 정부지원사업 리포트를 전달드립니다.\n첨부 파일을 확인하시어 사업 계획에 활용하시기 바랍니다.\n\n감사합니다.\n히어컴퍼니 드림';
 
   /* 파일 드롭 이벤트 (렌더 후 바인딩) */
   const dropEl=document.getElementById('mail-file-drop');
@@ -775,41 +775,40 @@ function setup(){
       St.mail.sel.delete(btn.dataset.id);render('mail');
     }
     else if(act==='mail-toggle-all'){
-      const mem=St.clients.filter(cl=>St.cases.some(c=>c.clientId===cl.id&&(c.isMember||c.serviceType==='member'))&&cl.email);
-      const allOn=mem.every(cl=>St.mail.sel.has(cl.id));
-      if(allOn){mem.forEach(cl=>St.mail.sel.delete(cl.id));}else{mem.forEach(cl=>St.mail.sel.add(cl.id));}
+      const all=St.clients.filter(cl=>cl.email);
+      const allOn=all.length>0&&all.every(cl=>St.mail.sel.has(cl.id));
+      if(allOn){all.forEach(cl=>St.mail.sel.delete(cl.id));}else{all.forEach(cl=>St.mail.sel.add(cl.id));}
       render('mail');
     }
     else if(act==='mail-rm-file'){St.mail.file=null;render('mail');}
     else if(act==='mail-copy'){
-      const mem=St.clients.filter(cl=>St.cases.some(c=>c.clientId===cl.id&&(c.isMember||c.serviceType==='member')));
-      const emails=mem.filter(cl=>St.mail.sel.has(cl.id)&&cl.email).map(cl=>cl.email);
-      if(!emails.length){return;}
-      navigator.clipboard.writeText(emails.join('; ')).then(()=>{
+      const emails=St.clients.filter(cl=>St.mail.sel.has(cl.id)&&cl.email).map(cl=>cl.email);
+      if(!emails.length){alert('수신자를 먼저 선택해 주세요.');return;}
+      const txt=emails.join('; ');
+      navigator.clipboard.writeText(txt).then(()=>{
         btn.textContent='✅ 복사 완료!';btn.style.color='var(--green)';
         setTimeout(()=>{btn.textContent='📋 이메일 복사';btn.style.color='';},2200);
-      }).catch(()=>{prompt('이메일 주소 (Ctrl+C로 복사):',emails.join('; '));});
+      }).catch(()=>{prompt('이메일 주소 (Ctrl+C로 복사):', txt);});
     }
     else if(act==='mail-send'){
-      const mem=St.clients.filter(cl=>St.cases.some(c=>c.clientId===cl.id&&(c.isMember||c.serviceType==='member')));
-      const sel=mem.filter(cl=>St.mail.sel.has(cl.id)&&cl.email);
-      if(!sel.length){alert('수신자를 선택해 주세요.\n이메일이 등록된 멤버십 고객을 체크해 주세요.');return;}
+      const selClients=St.clients.filter(cl=>St.mail.sel.has(cl.id)&&cl.email);
+      if(!selClients.length){alert('수신자를 선택해 주세요.\n왼쪽 목록에서 발송할 고객을 체크해 주세요.');return;}
       const subj=document.getElementById('mail-subj')?.value||'[히어컴퍼니] 정부지원사업 리포트 안내';
       const body=(document.getElementById('mail-body')?.value||'')+(St.mail.file?'\n\n[첨부파일: '+St.mail.file+']':'');
-      const emails=sel.map(cl=>cl.email);
-      const encS=encodeURIComponent(subj),encB=encodeURIComponent(body);
-      /* 이메일 주소는 인코딩 금지 — @ 그대로 유지, anchor.click() 방식 사용 */
-      const openMailto=(batch)=>{
-        const a=document.createElement('a');
-        a.href='mailto:?bcc='+batch.join(',')+'\u0026subject='+encS+'\u0026body='+encB;
-        document.body.appendChild(a);a.click();
-        setTimeout(()=>document.body.removeChild(a),200);
+      const emails=selClients.map(cl=>cl.email);
+      const encS=encodeURIComponent(subj);
+      const encB=encodeURIComponent(body);
+      /* location.href 방식 — 가장 안정적인 이메일 클라이언트 호출 */
+      const doSend=(batch)=>{
+        location.href='mailto:'+batch[0]+(batch.length>1?'?bcc='+batch.slice(1).join(',')+'&':'?')+'subject='+encS+'&body='+encB;
       };
       if(emails.length>8){
         const parts=[];for(let i=0;i<emails.length;i+=8)parts.push(emails.slice(i,i+8));
-        if(!confirm(emails.length+'명을 '+parts.length+'번으로 나눠 발송합니다.\n확인을 누를 때마다 이메일 클라이언트가 열립니다.'))return;
-        parts.forEach((b,i)=>setTimeout(()=>openMailto(b),i*1000));
-      } else {openMailto(emails);}
+        if(!confirm(emails.length+'명을 '+parts.length+'번 나눠 발송합니다.\n1차 발송 후 나머지는 수동으로 📋 이메일 복사를 이용해 주세요.'))return;
+        doSend(parts[0]);
+      } else {
+        doSend(emails);
+      }
     }
     else if(act==='add-lec'){openLectureModal(null);}
     else if(act==='edit-lec'){const l=St.lectures.find(x=>x.id===id);if(l)openLectureModal(l);}
