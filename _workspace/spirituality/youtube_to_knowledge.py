@@ -5,7 +5,17 @@
 import re, os, datetime
 from pathlib import Path
 
-BASE = Path('/home/user/-/_workspace/spirituality')
+# 이 스크립트가 spirituality/ 안에 있으면 그 폴더를 BASE로,
+# dashboard/ 같은 하위 폴더에서 실행될 경우 부모 폴더를 BASE로 사용
+_here = Path(__file__).resolve().parent
+if (_here / 'knowledge-base').exists() or (_here / 'source-files').exists():
+    BASE = _here
+elif (_here.parent / 'knowledge-base').exists() or (_here.parent / 'source-files').exists():
+    BASE = _here.parent
+else:
+    # 어디서 실행해도 스크립트 옆에 폴더 생성
+    BASE = _here
+
 OUT_TEXT = BASE / 'source-files/text'
 OUT_KB   = BASE / 'knowledge-base'
 
@@ -196,5 +206,7 @@ if __name__ == '__main__':
         title = ' '.join(sys.argv[2:]) if len(sys.argv) > 2 else ''
         process_video(url, title)
     
-    # 인덱스 업데이트
-    os.system('python3 /home/user/-/_workspace/spirituality/extract_to_knowledge.py')
+    # 인덱스 업데이트 (extract_to_knowledge.py가 같은 폴더에 있을 때만)
+    extract_script = BASE / 'extract_to_knowledge.py'
+    if extract_script.exists():
+        os.system(f'python3 "{extract_script}"')
