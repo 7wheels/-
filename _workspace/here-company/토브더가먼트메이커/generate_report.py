@@ -151,7 +151,7 @@ for rank, name, org, amt, color, fit, desc, link in programs:
     desc_row = Table([[
         Paragraph('', ST['dc']),
         Paragraph(f'  ▶ {desc}', ST['dc']),
-        Paragraph(f'공고 바로가기 >', ST['lk']),
+        Paragraph(f'<link href="{link}">공고 바로가기 &gt;</link>', ST['lk']),
         Paragraph('', ST['dc']),
     ]], colWidths=[12*mm,100*mm,46*mm,14*mm])
     desc_row.setStyle(TableStyle([
