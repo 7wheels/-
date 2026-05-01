@@ -3,23 +3,22 @@
 실행: python3 server.py
 브라우저: http://localhost:5050
 """
-import json, time, queue, threading, sys
+import json, re, time, queue, threading, datetime, os
 from pathlib import Path
 from flask import Flask, Response, send_file, request
 
-# youtube_to_knowledge 모듈 경로 추가 (같은 폴더 우선, 그 다음 상위 폴더)
-sys.path.insert(0, str(Path(__file__).parent))
-sys.path.insert(1, str(Path(__file__).parent.parent))
-
 app = Flask(__name__)
-BASE = Path(__file__).parent
+
+# server.py 가 있는 폴더를 기준으로 지식베이스 경로 설정
+SERVER_DIR = Path(__file__).resolve().parent
+KB_BASE    = SERVER_DIR / 'knowledge-base'
+TEXT_BASE  = SERVER_DIR / 'source-files' / 'text'
 
 # 클라이언트에게 전달할 이벤트 큐
 _clients: list[queue.Queue] = []
 _lock = threading.Lock()
 
 def broadcast(event: dict):
-    """모든 연결된 브라우저에 이벤트 전송"""
     data = json.dumps(event, ensure_ascii=False)
     with _lock:
         dead = []
@@ -31,31 +30,25 @@ def broadcast(event: dict):
         for q in dead:
             _clients.remove(q)
 
-# ── 대시보드 상태 업데이트 헬퍼 ──────────────────────────────────────
 def agent_state(agent: str, state: str, message: str = ''):
-    """에이전트 상태 변경 (idle / thinking / working / speaking)"""
     broadcast({'type': 'agent_state', 'agent': agent, 'state': state, 'message': message})
 
 def log(agent: str, text: str):
-    """사이드 로그에 메시지 추가"""
     broadcast({'type': 'log', 'agent': agent, 'text': text})
 
 def progress(value: int):
-    """진행률 0~100"""
     broadcast({'type': 'progress', 'value': value})
 
 def status(text: str, session: str = ''):
-    """전체 상태 텍스트"""
     broadcast({'type': 'status', 'text': text, 'session': session})
 
 # ── 라우트 ────────────────────────────────────────────────────────────
 @app.route('/')
 def index():
-    return send_file(BASE / 'index.html')
+    return send_file(SERVER_DIR / 'index.html')
 
 @app.route('/events')
 def events():
-    """Server-Sent Events 스트림"""
     q: queue.Queue = queue.Queue(maxsize=50)
     with _lock:
         _clients.append(q)
@@ -79,15 +72,97 @@ def events():
 
 @app.route('/api/broadcast', methods=['POST'])
 def api_broadcast():
-    """외부 스크립트에서 이벤트를 전송하는 API"""
     data = request.get_json()
     broadcast(data)
     return {'ok': True}
 
+# ── 유튜브 카테고리 분류 ──────────────────────────────────────────────
+CATEGORIES = {
+    '영혼몸': 'spirit-soul-body',   'spirit':     'spirit-soul-body',
+    '권세':   'believers-authority','authority':  'believers-authority',
+    '은혜':   'grace-faith',        'grace':      'grace-faith',
+    '이미':   'already-got-it',     'already':    'already-got-it',
+    '노력':   'effortless-change',  'effortless': 'effortless-change',
+    '제한':   'dont-limit-god',     'limit':      'dont-limit-god',
+    '안식':   'sabbath',            'sabbath':    'sabbath',
+    '정체성': 'identity',           'identity':   'identity',
+}
+
+def _categorize(text: str) -> str:
+    t = text.lower()
+    for kw, cat in CATEGORIES.items():
+        if kw in t:
+            return cat
+    return 'general'
+
+def _get_video_id(url: str) -> str:
+    m = re.search(r'(?:v=|youtu\.be/|/embed/)([A-Za-z0-9_-]{11})', url)
+    return m.group(1) if m else url.strip()
+
+def _fetch_transcript(video_id: str):
+    """한국어 → 영어 → 아무 언어 순서로 자막 가져오기 (0.5.x / 0.6.x 모두 호환)"""
+    from youtube_transcript_api import YouTubeTranscriptApi
+
+    api = YouTubeTranscriptApi()
+    use_new = hasattr(api, 'fetch')  # 0.6.x
+
+    def fetch_langs(langs):
+        if use_new:
+            return list(api.fetch(video_id, languages=langs))
+        return YouTubeTranscriptApi.get_transcript(video_id, languages=langs)
+
+    def list_all():
+        if use_new:
+            return api.list(video_id)
+        return YouTubeTranscriptApi.list_transcripts(video_id)
+
+    def to_dict(entry):
+        if isinstance(entry, dict):
+            return entry
+        return {'text': entry.text, 'start': entry.start}
+
+    for langs, label in [(['ko'], '한국어'), (['en'], '영어')]:
+        try:
+            raw = fetch_langs(langs)
+            return label, [to_dict(e) for e in raw]
+        except Exception:
+            pass
+
+    try:
+        tl   = list_all()
+        t    = next(iter(tl))
+        raw  = list(t.fetch()) if hasattr(t, 'fetch') else list(t)
+        lang = getattr(t, 'language', '알 수 없음')
+        return f'{lang} (자동생성)', [to_dict(e) for e in raw]
+    except Exception as e:
+        raise RuntimeError(f'자막 없음: {e}')
+
+def _transcript_to_md(video_id, title, lang, transcript):
+    lines = [
+        f'# {title}', '',
+        f'> 출처: https://youtu.be/{video_id}',
+        f'> 언어: {lang} | 추출일: {datetime.date.today()}', '',
+        '## 전체 내용', '',
+    ]
+    chunk, chunk_start = [], None
+    for e in transcript:
+        s = e['start']
+        if chunk_start is None:
+            chunk_start = s
+        chunk.append(e['text'].strip())
+        if s - chunk_start >= 30:
+            mm, ss = int(chunk_start // 60), int(chunk_start % 60)
+            lines.append(f'**[{mm:02d}:{ss:02d}]** {" ".join(chunk)}')
+            lines.append('')
+            chunk, chunk_start = [], None
+    if chunk:
+        lines.append(' '.join(chunk))
+    return '\n'.join(lines)
+
 # ── 유튜브 추출 API ───────────────────────────────────────────────────
 @app.route('/api/youtube', methods=['POST'])
 def api_youtube():
-    data = request.get_json()
+    data  = request.get_json()
     url   = (data.get('url') or '').strip()
     title = (data.get('title') or '').strip()
 
@@ -95,27 +170,38 @@ def api_youtube():
         return {'ok': False, 'error': 'URL이 없습니다.'}, 400
 
     try:
-        from youtube_to_knowledge import process_video, categorize, get_video_id
-        import re
-
-        vid = get_video_id(url)
+        vid        = _get_video_id(url)
         used_title = title or f'워맥_{vid}'
+        cat        = _categorize(used_title)
 
         agent_state('안드레', 'thinking', '자막 가져오는 중')
-        log('안드레', f'🎬 유튜브 자막 추출 시작: {url}')
+        log('안드레', f'🎬 자막 추출 시작: {url}')
         progress(20)
 
-        out_file = process_video(url, title)
-        progress(80)
+        lang, transcript = _fetch_transcript(vid)
+        progress(50)
 
-        cat = categorize(used_title)
-        agent_state('안드레', 'working', '지식베이스 저장 중')
-        log('안드레', f'📚 저장 완료 → {cat}/{out_file.name}')
+        md = _transcript_to_md(vid, used_title, lang, transcript)
+
+        # 지식베이스 저장
+        cat_dir = KB_BASE / cat
+        cat_dir.mkdir(parents=True, exist_ok=True)
+        safe    = re.sub(r'[^\w가-힣\-_]', '_', used_title)[:60]
+        out     = cat_dir / f'{safe}.md'
+        out.write_text(md, encoding='utf-8')
+
+        # 원본 자막 보관
+        TEXT_BASE.mkdir(parents=True, exist_ok=True)
+        (TEXT_BASE / f'{safe}_원본자막.txt').write_text(
+            '\n'.join(e['text'] for e in transcript), encoding='utf-8')
+
         progress(100)
+        agent_state('안드레', 'working', '지식베이스 저장 중')
+        log('안드레', f'📚 저장 완료 → knowledge-base/{cat}/{out.name}')
         agent_state('안드레', 'speaking', '추출 완료!')
         status('유튜브 추출 완료 ✓')
 
-        return {'ok': True, 'category': cat, 'file': out_file.name}
+        return {'ok': True, 'category': cat, 'file': out.name}
 
     except Exception as e:
         agent_state('안드레', 'idle')
@@ -123,11 +209,10 @@ def api_youtube():
         status('추출 실패')
         return {'ok': False, 'error': str(e)}, 500
 
-# ── 데모 시나리오 (서버 측) ───────────────────────────────────────────
+# ── 데모 시나리오 ─────────────────────────────────────────────────────
 @app.route('/api/demo')
 def run_demo():
     def _run():
-        import time
         steps = [
             (0.5,  lambda: [status('회의 진행 중...', '워맥 은혜 신학 뉴스레터 작성'),
                              agent_state('영성', 'speaking', '팀을 소집합니다.')]),
@@ -140,7 +225,7 @@ def run_demo():
                              log('요한', '워맥 은혜 신학 성경 근거 분석 시작.'),
                              log('마태', '뉴스레터 구조 설계 시작.'),
                              log('안드레', '독자 공감 포인트 기획 시작.')]),
-            (2.5,  lambda: [agent_state('요한', 'speaking', 'elp 2:8-9\n은혜로 구원받았으니'),
+            (2.5,  lambda: [agent_state('요한', 'speaking', 'Eph 2:8-9\n은혜로 구원받았으니'),
                              progress(40)]),
             (1.5,  lambda: [agent_state('마태', 'speaking', '훅→본문→선언문\n→실천 과제'),
                              progress(55)]),
@@ -160,18 +245,15 @@ def run_demo():
         ]
         for delay, actions in steps:
             time.sleep(delay)
-            result = actions()
-            if isinstance(result, list):
-                for r in result:
-                    pass  # 이미 broadcast 완료
+            actions()
 
-    t = threading.Thread(target=_run, daemon=True)
-    t.start()
+    threading.Thread(target=_run, daemon=True).start()
     return {'ok': True}
 
 if __name__ == '__main__':
     print('=' * 50)
     print('  내주 영성팀 대시보드')
+    print(f'  저장 위치: {KB_BASE}')
     print('  http://localhost:5050')
     print('=' * 50)
     app.run(host='0.0.0.0', port=5050, debug=False, threaded=True)
