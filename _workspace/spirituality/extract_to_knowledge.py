@@ -1,13 +1,15 @@
 """
 NotebookLM → 지식 베이스 추출 파이프라인
-PPT, PDF → 구조화된 마크다운 변환
+PPT, PDF, DOCX, TXT, MD → 구조화된 마크다운 변환
 """
 import os, sys, re, datetime
 from pathlib import Path
 
 BASE = Path('/home/user/-/_workspace/spirituality')
-SRC_PPT = BASE / 'source-files/ppt'
-SRC_PDF = BASE / 'source-files/pdf'
+SRC_PPT  = BASE / 'source-files/ppt'
+SRC_PDF  = BASE / 'source-files/pdf'
+SRC_DOCS = BASE / 'source-files/docs'
+SRC_TEXT = BASE / 'source-files/text'
 OUT = BASE / 'knowledge-base'
 PROCESSED = BASE / 'processed'
 
@@ -126,18 +128,22 @@ def main():
         if existing.name == 'INDEX.md':
             continue
 
-    total_ppt = list(SRC_PPT.glob('*.pptx')) + list(SRC_PPT.glob('*.ppt'))
-    total_pdf = list(SRC_PDF.glob('*.pdf'))
+    total_ppt  = list(SRC_PPT.glob('*.pptx'))  + list(SRC_PPT.glob('*.ppt'))
+    total_pdf  = list(SRC_PDF.glob('*.pdf'))
+    total_docs = list(SRC_DOCS.glob('*.docx')) + list(SRC_DOCS.glob('*.doc'))
+    total_text = list(SRC_TEXT.glob('*.txt'))  + list(SRC_TEXT.glob('*.md'))
 
-    if not total_ppt and not total_pdf:
+    if not total_ppt and not total_pdf and not total_docs and not total_text:
         print('⚠  소스 파일이 없습니다.')
-        print(f'   PPT 파일 → {SRC_PPT}/ 에 넣어주세요')
-        print(f'   PDF 파일 → {SRC_PDF}/ 에 넣어주세요')
+        print(f'   PPT  → {SRC_PPT}/')
+        print(f'   PDF  → {SRC_PDF}/')
+        print(f'   DOCX → {SRC_DOCS}/')
+        print(f'   TXT  → {SRC_TEXT}/')
         print('\n데모용 샘플 파일을 생성합니다...')
         _create_demo()
         return
 
-    print(f'처리 시작: PPT {len(total_ppt)}개 | PDF {len(total_pdf)}개\n')
+    print(f'처리 시작: PPT {len(total_ppt)}개 | PDF {len(total_pdf)}개 | DOCX {len(total_docs)}개 | TXT {len(total_text)}개\n')
 
     for ppt_file in total_ppt:
         print(f'[PPT] {ppt_file.name}')
@@ -175,6 +181,56 @@ def main():
                 'type': 'PDF',
                 'date': datetime.date.today().isoformat(),
             })
+            print(f'  → 저장: {out_file.relative_to(BASE)}')
+        except Exception as e:
+            print(f'  ✗ 오류: {e}')
+
+    # DOCX 처리
+    for doc_file in total_docs:
+        print(f'[DOCX] {doc_file.name}')
+        try:
+            import docx
+            doc = docx.Document(str(doc_file))
+            lines = [f'# {doc_file.stem}\n', f'> 출처: {doc_file.name} | 추출일: {datetime.date.today()}\n']
+            for para in doc.paragraphs:
+                text = para.text.strip()
+                if not text:
+                    continue
+                style = para.style.name.lower()
+                if 'heading 1' in style:
+                    lines.append(f'\n## {text}')
+                elif 'heading 2' in style:
+                    lines.append(f'\n### {text}')
+                else:
+                    lines.append(text)
+            content = '\n'.join(lines)
+            cat = categorize(doc_file.stem)
+            cat_dir = OUT / cat
+            cat_dir.mkdir(exist_ok=True)
+            out_file = cat_dir / f'{doc_file.stem}.md'
+            out_file.write_text(content, encoding='utf-8')
+            entries.append({'title': doc_file.stem, 'path': str(out_file.relative_to(OUT)),
+                            'category': cat, 'type': 'DOCX', 'date': datetime.date.today().isoformat()})
+            print(f'  → 저장: {out_file.relative_to(BASE)}')
+        except ImportError:
+            print('  ⚠ python-docx 필요: pip install python-docx')
+        except Exception as e:
+            print(f'  ✗ 오류: {e}')
+
+    # TXT / MD 처리
+    for txt_file in total_text:
+        print(f'[TXT] {txt_file.name}')
+        try:
+            raw = txt_file.read_text(encoding='utf-8', errors='ignore')
+            header = f'# {txt_file.stem}\n\n> 출처: {txt_file.name} | 추출일: {datetime.date.today()}\n\n'
+            content = header + raw
+            cat = categorize(txt_file.stem)
+            cat_dir = OUT / cat
+            cat_dir.mkdir(exist_ok=True)
+            out_file = cat_dir / f'{txt_file.stem}.md'
+            out_file.write_text(content, encoding='utf-8')
+            entries.append({'title': txt_file.stem, 'path': str(out_file.relative_to(OUT)),
+                            'category': cat, 'type': 'TXT', 'date': datetime.date.today().isoformat()})
             print(f'  → 저장: {out_file.relative_to(BASE)}')
         except Exception as e:
             print(f'  ✗ 오류: {e}')
