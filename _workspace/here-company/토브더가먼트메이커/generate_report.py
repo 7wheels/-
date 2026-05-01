@@ -14,7 +14,7 @@ import matplotlib.patches as mpatches
 import matplotlib.font_manager as fm
 
 # ── 폰트 등록 ──────────────────────────────────────────────
-FONT_PATH = '/usr/share/fonts/truetype/fonts-japanese-gothic.ttf'
+FONT_PATH = '/tmp/NanumGothic.ttf'
 MPL_FONT = '/tmp/NanumGothic.ttf'
 pdfmetrics.registerFont(TTFont('KR', FONT_PATH))
 pdfmetrics.registerFont(TTFont('KR-Bold', FONT_PATH))
