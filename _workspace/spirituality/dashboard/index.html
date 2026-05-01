@@ -743,7 +743,31 @@ const DEMO_SCENARIOS = [
       { delay: 9500, agent:'도마',  state:'thinking',  msg:'', log:'초안을 검토합니다. 끌어당김 혼합 위험 점검 중...' },
       { delay: 11000,agent:'도마',  state:'speaking',  msg:'⚠️ 은혜를 도구화\n하는 표현 수정 필요', log:'지적: "원하면 이루어진다" 표현은 번영신학 오해 유발. 수정 권고.' },
       { delay: 12500,agent:'도마',  state:'idle',      msg:'', log:'' },
-      { delay: 13000,agent:'영성',  state:'speaking',  msg:'통합 완료!\n뉴스레터 1호 완성', log:'최종 통합 — 도마 지적 반영, 뉴스레터 완성본 저장.' },
+      { delay: 13000,agent:'영성',  state:'speaking',  msg:'통합 완료!\n뉴스레터 1호 완성', log:'최종 통합 — 도마 지적 반영, 뉴스레터 완성본 저장.',
+        result: { title:'워맥 은혜 신학 뉴스레터 1호', content:
+`# 은혜: 하나님의 선물
+
+> "너희가 그 은혜를 인하여 믿음으로 말미암아 구원을 얻었으니" — 에베소서 2:8
+
+## 핵심 메시지
+
+은혜는 **우리의 노력으로 얻는 것이 아닙니다.**
+하나님이 이미 주신 것을 믿음으로 받는 것입니다.
+
+## 세 가지 핵심 진리
+
+- **이미 완성됨** — 십자가에서 모든 것이 완성되었습니다
+- **받는 자격** — 자격 없는 자에게 주시는 것이 은혜입니다
+- **믿음의 통로** — 믿음은 은혜를 받는 통로입니다
+
+## 이번 주 선언문
+
+> "나는 은혜로 구원받은 하나님의 자녀입니다.
+> 내 행위가 아닌 그리스도의 완성된 사역이 나의 기초입니다."
+
+---
+*내주 영성팀 · 워맥 은혜 신학 뉴스레터*`}
+      },
       { delay: 15000,agent:'영성',  state:'idle',      msg:'', log:'' },
     ]
   },
@@ -757,7 +781,36 @@ const DEMO_SCENARIOS = [
       { delay: 5500, agent:'빌립',  state:'speaking',  msg:'호흡 기도 + 임재\n연습 10분씩', log:'각 소그룹 실습 — 호흡 기도, 바디 스캔, 렉시오 디비나 3종 로테이션.' },
       { delay: 7000, agent:'베드로',state:'idle',      msg:'', log:'' },
       { delay: 7000, agent:'빌립',  state:'idle',      msg:'', log:'' },
-      { delay: 7500, agent:'영성',  state:'speaking',  msg:'소그룹 구조 완성!', log:'소그룹 운영 매뉴얼 저장 완료.' },
+      { delay: 7500, agent:'영성',  state:'speaking',  msg:'소그룹 구조 완성!', log:'소그룹 운영 매뉴얼 저장 완료.',
+        result: { title:'내려놓음 서클 — 소그룹 운영 매뉴얼', content:
+`# 내려놓음 서클 소그룹 운영 가이드
+
+## 기본 구조
+
+- **인원**: 6~8명 (리더 1명 포함)
+- **주기**: 격주 90분
+- **장소**: 가정 또는 조용한 공간
+
+## 모임 흐름 (90분)
+
+### 1. 침묵 · 정착 (10분)
+호흡 기도로 시작. "주님, 여기 있습니다."
+
+### 2. 렉시오 디비나 (25분)
+본문 낭독 → 묵상 → 개인 침묵 → 나눔
+
+### 3. 삶 나눔 (30분)
+이번 주 하나님의 임재를 경험한 순간
+
+### 4. 중보기도 (15분)
+서로를 위한 침묵 중보
+
+### 5. 파송 기도 (10분)
+이번 주 한 가지 실천 선언
+
+---
+*베드로·빌립 공동 설계 | 내주 영성팀*`}
+      },
       { delay: 9000, agent:'영성',  state:'idle',      msg:'', log:'' },
     ]
   },
@@ -780,10 +833,13 @@ async function runScenario(scenario) {
   const total = scenario.steps.filter(s => s.state !== 'idle').length;
   let done = 0;
 
-  for (const step of scenario.steps) {
-    await new Promise(r => setTimeout(r, step.delay - (scenario.steps[scenario.steps.indexOf(step) - 1]?.delay || 0)));
+  for (let i = 0; i < scenario.steps.length; i++) {
+    const step = scenario.steps[i];
+    const prev = scenario.steps[i - 1]?.delay || 0;
+    await new Promise(r => setTimeout(r, step.delay - prev));
     setAgentState(step.agent, step.state, step.msg);
     if (step.log) addLog(step.agent, step.log);
+    if (step.result) addResult(step.agent, step.result.title, step.result.content);
     if (step.state !== 'idle') {
       done++;
       setProgress(Math.round(done / total * 100));
@@ -904,9 +960,13 @@ function md2html(md) {
 
 // ── 결과물 카드 추가 ──────────────────────────────────────────────────
 let _resultCount = 0;
+const _resultContents = {};
+
 function addResult(agent, title, content) {
   _resultCount++;
   const id = `result-${_resultCount}`;
+  _resultContents[id] = content;   // 내용을 맵에 보관 (onclick 인라인 회피)
+
   const now = new Date().toLocaleTimeString('ko-KR', {hour:'2-digit', minute:'2-digit'});
   const agentInfo = AGENTS[agent] || { emoji:'✨' };
 
@@ -924,7 +984,7 @@ function addResult(agent, title, content) {
       <span class="result-card-toggle" id="toggle-${id}">▼</span>
     </div>
     <div class="result-card-body open" id="body-${id}">${md2html(content)}</div>
-    <button class="result-copy-btn" onclick="copyResult('${id}', \`${content.replace(/`/g,'\\`')}\`)">📋 텍스트 복사</button>
+    <button class="result-copy-btn" onclick="copyResult('${id}')">📋 텍스트 복사</button>
   `;
   document.getElementById('result-list').prepend(card);
 
@@ -947,7 +1007,8 @@ function toggleResult(id) {
   tog.textContent = open ? '▼' : '▶';
 }
 
-function copyResult(id, text) {
+function copyResult(id) {
+  const text = _resultContents[id] || '';
   navigator.clipboard.writeText(text).then(() => {
     const btn = document.querySelector(`#body-${id} ~ .result-copy-btn`);
     if (btn) { btn.textContent = '✅ 복사됨'; setTimeout(() => btn.textContent = '📋 텍스트 복사', 2000); }
