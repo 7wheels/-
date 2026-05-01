@@ -3,9 +3,12 @@
 실행: python3 server.py
 브라우저: http://localhost:5050
 """
-import json, time, queue, threading
+import json, time, queue, threading, sys
 from pathlib import Path
 from flask import Flask, Response, send_file, request
+
+# youtube_to_knowledge 모듈 경로 추가
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 app = Flask(__name__)
 BASE = Path(__file__).parent
@@ -79,6 +82,45 @@ def api_broadcast():
     data = request.get_json()
     broadcast(data)
     return {'ok': True}
+
+# ── 유튜브 추출 API ───────────────────────────────────────────────────
+@app.route('/api/youtube', methods=['POST'])
+def api_youtube():
+    data = request.get_json()
+    url   = (data.get('url') or '').strip()
+    title = (data.get('title') or '').strip()
+
+    if not url:
+        return {'ok': False, 'error': 'URL이 없습니다.'}, 400
+
+    try:
+        from youtube_to_knowledge import process_video, categorize, get_video_id
+        import re
+
+        vid = get_video_id(url)
+        used_title = title or f'워맥_{vid}'
+
+        agent_state('안드레', 'thinking', '자막 가져오는 중')
+        log('안드레', f'🎬 유튜브 자막 추출 시작: {url}')
+        progress(20)
+
+        out_file = process_video(url, title)
+        progress(80)
+
+        cat = categorize(used_title)
+        agent_state('안드레', 'working', '지식베이스 저장 중')
+        log('안드레', f'📚 저장 완료 → {cat}/{out_file.name}')
+        progress(100)
+        agent_state('안드레', 'speaking', '추출 완료!')
+        status('유튜브 추출 완료 ✓')
+
+        return {'ok': True, 'category': cat, 'file': out_file.name}
+
+    except Exception as e:
+        agent_state('안드레', 'idle')
+        log('도마', f'⚠️ 추출 오류: {e}')
+        status('추출 실패')
+        return {'ok': False, 'error': str(e)}, 500
 
 # ── 데모 시나리오 (서버 측) ───────────────────────────────────────────
 @app.route('/api/demo')
