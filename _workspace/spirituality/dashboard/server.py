@@ -7,8 +7,9 @@ import json, time, queue, threading, sys
 from pathlib import Path
 from flask import Flask, Response, send_file, request
 
-# youtube_to_knowledge 모듈 경로 추가
-sys.path.insert(0, str(Path(__file__).parent.parent))
+# youtube_to_knowledge 모듈 경로 추가 (같은 폴더 우선, 그 다음 상위 폴더)
+sys.path.insert(0, str(Path(__file__).parent))
+sys.path.insert(1, str(Path(__file__).parent.parent))
 
 app = Flask(__name__)
 BASE = Path(__file__).parent
