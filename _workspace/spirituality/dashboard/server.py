@@ -42,6 +42,10 @@ def progress(value: int):
 def status(text: str, session: str = ''):
     broadcast({'type': 'status', 'text': text, 'session': session})
 
+def result(agent: str, title: str, content: str):
+    """결과물을 대시보드 결과물 패널에 표시"""
+    broadcast({'type': 'result', 'agent': agent, 'title': title, 'content': content})
+
 # ── 라우트 ────────────────────────────────────────────────────────────
 @app.route('/')
 def index():
@@ -74,6 +78,16 @@ def events():
 def api_broadcast():
     data = request.get_json()
     broadcast(data)
+    return {'ok': True}
+
+@app.route('/api/result', methods=['POST'])
+def api_result():
+    """외부에서 결과물을 대시보드에 전송"""
+    data    = request.get_json()
+    agent   = data.get('agent', '영성')
+    title   = data.get('title', '결과물')
+    content = data.get('content', '')
+    result(agent, title, content)
     return {'ok': True}
 
 # ── 유튜브 카테고리 분류 ──────────────────────────────────────────────
@@ -240,7 +254,30 @@ def run_demo():
             (1.5,  lambda: [agent_state('도마', 'idle'),
                              agent_state('영성', 'speaking', '통합 완료!\n뉴스레터 1호 완성'),
                              progress(100),
-                             log('영성', '최종 통합 완료. 도마 피드백 반영. 저장.')]),
+                             log('영성', '최종 통합 완료. 도마 피드백 반영. 저장.'),
+                             result('영성', '워맥 은혜 신학 뉴스레터 1호',
+"""# 은혜: 하나님의 선물, 내 것이 아닌 것이 내 것이 되는 방법
+
+> "너희가 그 은혜를 인하여 믿음으로 말미암아 구원을 얻었으니" — 에베소서 2:8
+
+## 📖 이번 호 핵심 메시지
+
+은혜는 **우리의 노력으로 얻는 것이 아닙니다.**
+하나님이 이미 주신 것을 믿음으로 받는 것입니다.
+
+## 🔑 세 가지 핵심 진리
+
+- **이미 완성됨** — 십자가에서 모든 것이 완성되었습니다
+- **받는 자격** — 자격이 없어서가 아니라, 자격 없는 자에게 주시는 것이 은혜입니다
+- **믿음의 통로** — 믿음은 은혜를 생산하지 않고, 은혜를 받는 통로입니다
+
+## 💡 이번 주 실천 선언
+
+> "나는 은혜로 구원받은 하나님의 자녀입니다.
+> 내 행위가 아닌 그리스도의 완성된 사역이 나의 기초입니다."
+
+---
+*내주 영성팀 · 워맥 은혜 신학 뉴스레터*""")]),
             (2.0,  lambda: [agent_state('영성', 'idle'), status('완료 ✓')]),
         ]
         for delay, actions in steps:
