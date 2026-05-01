@@ -51,13 +51,31 @@ ST = {
 }
 
 OUT = '/home/user/-/_workspace/here-company/토브더가먼트메이커/토브더가먼트메이커_정부지원사업리포트_20260501.pdf'
+W, H = A4
+M = 15*mm
 doc = SimpleDocTemplate(OUT, pagesize=A4,
-    leftMargin=15*mm, rightMargin=15*mm, topMargin=15*mm, bottomMargin=15*mm)
+    leftMargin=M, rightMargin=M, topMargin=18*mm, bottomMargin=15*mm)
 story = []
+
+COMPANY_NAME = '(주)토브더가먼트메이커'
+
+def on_page(canvas, doc):
+    canvas.saveState()
+    canvas.setFont('KR', 7.5)
+    canvas.setFillColor(NAVY)
+    canvas.drawString(M, H - 10*mm, COMPANY_NAME)
+    w = canvas.stringWidth(COMPANY_NAME, 'KR', 7.5)
+    canvas.setFillColor(BLUE)
+    canvas.drawString(M + w, H - 10*mm, '  |  히어컴퍼니 기업컨설팅 제공')
+    canvas.setStrokeColor(LTBLUE)
+    canvas.setLineWidth(0.6)
+    canvas.line(M, H - 11.5*mm, W - M, H - 11.5*mm)
+    canvas.restoreState()
 
 # ══ 1. 표지 ══
 cover = Table([[Paragraph('히어컴퍼니 정부지원사업 리포트', ST['cl'])],
-               [Paragraph('(주)토브더가먼트메이커', ST['ct'])],
+               [Paragraph(COMPANY_NAME, ST['ct'])],
+               [Paragraph('Provided by 히어컴퍼니 기업컨설팅', S('br', fontSize=8, textColor=colors.HexColor('#BDD7EE'), alignment=1, spaceBefore=2))],
                [Paragraph('정부지원사업 맞춤 매칭 리포트 v3', ST['cs'])],
                [Paragraph('2026. 05. 01  |  의류제조업 택티컬 전문  |  서울 성동구', ST['cd'])]],
               colWidths=[180*mm])
@@ -321,5 +339,5 @@ story.append(Paragraph(
     '실제 신청 전 각 기관 공고문을 반드시 재확인하시기 바랍니다.  |  정책자금 상담은 자금 에이전트에게 이관합니다.',
     ST['sm']))
 
-doc.build(story)
+doc.build(story, onFirstPage=on_page, onLaterPages=on_page)
 print(f'PDF generated: {OUT}')

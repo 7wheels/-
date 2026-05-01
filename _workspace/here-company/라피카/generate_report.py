@@ -64,6 +64,19 @@ ST = {
 W, H = A4
 M = 18*mm
 
+def on_page(canvas, doc):
+    canvas.saveState()
+    canvas.setFont('KR', 7.5)
+    canvas.setFillColor(NAVY)
+    canvas.drawString(M, H - 10*mm, COMPANY)
+    w = canvas.stringWidth(COMPANY, 'KR', 7.5)
+    canvas.setFillColor(BLUE)
+    canvas.drawString(M + w, H - 10*mm, '  |  히어컴퍼니 기업컨설팅 제공')
+    canvas.setStrokeColor(LBLUE)
+    canvas.setLineWidth(0.6)
+    canvas.line(M, H - 11.5*mm, W - M, H - 11.5*mm)
+    canvas.restoreState()
+
 # ── 기업 및 프로그램 데이터 ───────────────────────────────────────────
 COMPANY = '(주)라피카'
 DATE_STR = '2026-05-01'
@@ -221,7 +234,7 @@ PDF_PATH = os.path.join(OUT_DIR, f'라피카_정부지원사업리포트_{TODAY}
 
 doc = SimpleDocTemplate(PDF_PATH, pagesize=A4,
                         leftMargin=M, rightMargin=M,
-                        topMargin=14*mm, bottomMargin=14*mm)
+                        topMargin=18*mm, bottomMargin=14*mm)
 story = []
 CW = W - 2*M
 
@@ -230,6 +243,7 @@ cover_data = [[Paragraph('히어컴퍼니 기업컨설팅', ST['sub'])],
               [Paragraph('정부지원사업 맞춤 리포트', ST['h1'])],
               [Spacer(1, 4*mm)],
               [Paragraph(COMPANY, S('co', fontSize=18, textColor=colors.HexColor('#BDD7EE'), leading=24, alignment=1))],
+              [Paragraph('Provided by 히어컴퍼니 기업컨설팅', S('br', fontSize=8, textColor=colors.HexColor('#7FB3D3'), leading=13, alignment=1))],
               [Spacer(1, 3*mm)],
               [Paragraph(f'작성일: {DATE_STR}  |  담당: 히어컴퍼니 정부지원사업 에이전트', ST['fnc'])]]
 cover = Table([cover_data], colWidths=[CW])
@@ -449,5 +463,5 @@ story.append(Paragraph(
     '실제 신청 전 최신 공고문을 반드시 재확인하시기 바랍니다.',
     ST['sm']))
 
-doc.build(story)
+doc.build(story, onFirstPage=on_page, onLaterPages=on_page)
 print(f'PDF 생성 완료: {PDF_PATH}')
