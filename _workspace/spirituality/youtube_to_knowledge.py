@@ -39,30 +39,41 @@ def get_video_id(url: str) -> str:
             return m.group(1)
     return url.strip()  # ID 직접 입력한 경우
 
-def fetch_transcript(video_id: str) -> tuple[str, str, list]:
-    """자막 가져오기 — 한국어 우선, 없으면 영어"""
-    from youtube_transcript_api import YouTubeTranscriptApi, NoTranscriptFound
-    
+def fetch_transcript(video_id: str) -> tuple[str, list]:
+    """자막 가져오기 — 한국어 우선, 없으면 영어, 없으면 아무 언어"""
+    from youtube_transcript_api import YouTubeTranscriptApi
+
+    # 0.6.x 새 API (인스턴스 방식) vs 0.5.x 정적 메서드 자동 감지
+    _api = YouTubeTranscriptApi() if callable(getattr(YouTubeTranscriptApi, '__init__', None)) else None
+
+    def _fetch(langs):
+        if _api and hasattr(_api, 'fetch'):
+            return _api.fetch(video_id, languages=langs)
+        return YouTubeTranscriptApi.get_transcript(video_id, languages=langs)
+
+    def _list():
+        if _api and hasattr(_api, 'list'):
+            return _api.list(video_id)
+        return YouTubeTranscriptApi.list_transcripts(video_id)
+
     try:
-        # 한국어 수동 자막 시도
-        transcript = YouTubeTranscriptApi.get_transcript(video_id, languages=['ko'])
-        lang = '한국어'
+        return '한국어', _fetch(['ko'])
     except Exception:
-        try:
-            # 영어 자막 시도
-            transcript = YouTubeTranscriptApi.get_transcript(video_id, languages=['en'])
-            lang = '영어'
-        except Exception:
-            try:
-                # 자동 생성 자막 (어떤 언어든)
-                transcript_list = YouTubeTranscriptApi.list_transcripts(video_id)
-                t = next(iter(transcript_list))
-                transcript = t.fetch()
-                lang = f'{t.language} (자동생성)'
-            except Exception as e:
-                raise RuntimeError(f'자막 없음: {e}')
-    
-    return lang, transcript
+        pass
+    try:
+        return '영어', _fetch(['en'])
+    except Exception:
+        pass
+    try:
+        tl = _list()
+        t = next(iter(tl))
+        data = t.fetch() if hasattr(t, 'fetch') else list(t)
+        # 0.6.x FetchedTranscript → list of dicts
+        if hasattr(data, '__iter__') and not isinstance(data, list):
+            data = [{'text': s.text, 'start': s.start} for s in data]
+        return f'{t.language} (자동생성)', data
+    except Exception as e:
+        raise RuntimeError(f'자막 없음: {e}')
 
 def transcript_to_markdown(video_id: str, title: str, lang: str, 
                              transcript: list, url: str) -> str:
@@ -78,12 +89,16 @@ def transcript_to_markdown(video_id: str, title: str, lang: str,
     ]
     
     # 자막을 문단으로 묶기 (30초 단위)
+    # 0.6.x는 객체, 0.5.x는 dict — 둘 다 처리
+    def _text(e): return (e['text'] if isinstance(e, dict) else e.text).strip()
+    def _start(e): return e['start'] if isinstance(e, dict) else e.start
+
     chunk, chunk_start = [], None
     for entry in transcript:
         if chunk_start is None:
-            chunk_start = entry['start']
-        chunk.append(entry['text'].strip())
-        if entry['start'] - chunk_start >= 30:
+            chunk_start = _start(entry)
+        chunk.append(_text(entry))
+        if _start(entry) - chunk_start >= 30:
             text = ' '.join(chunk)
             minutes = int(chunk_start // 60)
             seconds = int(chunk_start % 60)
@@ -129,7 +144,7 @@ def process_video(url_or_id: str, title: str = ''):
     # 원본 텍스트도 source-files/text 에 보관
     OUT_TEXT.mkdir(parents=True, exist_ok=True)
     src_file = OUT_TEXT / f'{safe_title}_원본자막.txt'
-    raw = '\n'.join(e['text'] for e in transcript)
+    raw = '\n'.join(e['text'] if isinstance(e, dict) else e.text for e in transcript)
     src_file.write_text(raw, encoding='utf-8')
     
     return out_file
