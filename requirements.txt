@@ -1,0 +1,2 @@
+anthropic>=0.45.0
+claude-agent-sdk>=0.0.20
