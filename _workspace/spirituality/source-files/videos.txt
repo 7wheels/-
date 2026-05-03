@@ -1,0 +1,13 @@
+# 워맥 유튜브 영상 목록
+# 형식: URL <탭> 제목
+# 제목에 키워드를 넣으면 자동 분류됩니다
+# (영혼몸/권세/은혜/이미/노력/제한/안식/정체성)
+#
+# 사용법: python3 youtube_to_knowledge.py --list videos.txt
+
+# 예시 (실제 URL로 교체하세요):
+# https://youtu.be/영상ID1	워맥_영혼몸_1강_Spirit Soul Body
+# https://youtu.be/영상ID2	워맥_영혼몸_2강_거듭난영의완전성
+# https://youtu.be/영상ID3	워맥_권세_믿는자의권세
+# https://youtu.be/영상ID4	워맥_은혜_은혜와믿음의균형
+# https://youtu.be/영상ID5	워맥_이미_당신은이미가졌습니다
