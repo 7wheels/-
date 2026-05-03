@@ -9,11 +9,10 @@ from reportlab.pdfbase.cidfonts import UnicodeCIDFont
 from pathlib import Path
 import datetime
 
-# ── 폰트 ─────────────────────────────────────────────────────────────
+# ── 폰트 (전부 고딕) ─────────────────────────────────────────────────
 pdfmetrics.registerFont(UnicodeCIDFont('HYGothic-Medium'))
-pdfmetrics.registerFont(UnicodeCIDFont('HYSMyeongJo-Medium'))
-KR  = 'HYGothic-Medium'    # 본문 (고딕)
-KRB = 'HYSMyeongJo-Medium' # 강조 (명조)
+KR  = 'HYGothic-Medium'   # 본문
+KRB = 'HYGothic-Medium'   # 제목·강조 (크기·색상으로 본문과 구분)
 
 # ── 색상 ─────────────────────────────────────────────────────────────
 NAVY  = colors.HexColor('#1B3A6B')
@@ -34,10 +33,9 @@ MX = 28    # 좌우 여백
 MY = 16    # 상하 여백
 CW = SW - 2 * MX   # 콘텐츠 너비 = 904
 
-HEADER_H = 52   # 상단 헤더 바 높이
+HEADER_H = 58   # 상단 헤더 바 높이 (제목 크게 → 높이 확보)
 FOOTER_H = 22   # 하단 푸터 높이
-# 콘텐츠 y 범위: FOOTER_H ~ SH - HEADER_H
-CONTENT_TOP = SH - HEADER_H - 10   # 콘텐츠 시작 y
+CONTENT_TOP = SH - HEADER_H - 12   # 콘텐츠 시작 y
 CONTENT_BOT = FOOTER_H + 4
 
 
@@ -79,36 +77,40 @@ def text_block(c, text, x, y, max_w, font, size, color=DGRAY, lh=None):
 
 def slide_header(c, title, page_num):
     """슬라이드 상단 헤더 + 하단 페이지 번호"""
-    # 헤더 배경
     c.setFillColor(NAVY)
     c.rect(0, SH - HEADER_H, SW, HEADER_H, fill=1, stroke=0)
-    # 골드 하단 라인
+    # 왼쪽 골드 강조 바
     c.setFillColor(GOLD)
+    c.rect(0, SH - HEADER_H, 6, HEADER_H, fill=1, stroke=0)
+    # 골드 하단 라인
     c.rect(0, SH - HEADER_H - 2, SW, 2, fill=1, stroke=0)
-    # 제목
-    c.setFont(KRB, 16)
+    # 페이지 제목 (크고 선명하게)
+    c.setFont(KR, 20)
     c.setFillColor(WHITE)
-    c.drawString(MX, SH - HEADER_H + 17, title)
-    # 회사명
-    c.setFont(KR, 9)
+    c.drawString(MX + 8, SH - HEADER_H + 20, title)
+    # 회사명 (작게, 오른쪽)
+    c.setFont(KR, 10)
     c.setFillColor(LBLUE)
-    c.drawRightString(SW - MX, SH - HEADER_H + 17, '오드린 농업회사법인(주)')
+    c.drawRightString(SW - MX, SH - HEADER_H + 20, '오드린 농업회사법인(주)')
     # 페이지 번호
-    c.setFont(KR, 8)
+    c.setFont(KR, 9)
     c.setFillColor(GRAY)
     c.drawCentredString(SW / 2, 8, str(page_num))
 
 
 def section_label(c, x, y, text, w=None):
-    """섹션 구분 레이블 박스"""
-    tw = c.stringWidth(text, KRB, 9)
-    bw = (w or tw + 16)
-    bh = 18
+    """섹션 구분 레이블 박스 — 제목과 본문 구분을 위해 크게"""
+    tw = c.stringWidth(text, KR, 11)
+    bw = (w or tw + 20)
+    bh = 22
     c.setFillColor(NAVY)
     c.roundRect(x, y - bh, bw, bh, 3, fill=1, stroke=0)
-    c.setFont(KRB, 9)
+    # 왼쪽 골드 바
+    c.setFillColor(GOLD)
+    c.roundRect(x, y - bh, 4, bh, 2, fill=1, stroke=0)
+    c.setFont(KR, 11)
     c.setFillColor(WHITE)
-    c.drawString(x + 8, y - bh + 5, text)
+    c.drawString(x + 10, y - bh + 7, text)
     return bh
 
 
@@ -122,20 +124,23 @@ def card(c, x, y, w, h, title, value, sub='', title_color=LBLUE, val_color=GOLD,
     """수치 강조 카드"""
     c.setFillColor(bg)
     c.roundRect(x, y - h, w, h, 4, fill=1, stroke=0)
-    c.setFont(KR, 8)
+    # 상단 골드 라인
+    c.setFillColor(GOLD)
+    c.rect(x, y - 3, w, 3, fill=1, stroke=0)
+    c.setFont(KR, 9)          # 카드 제목: 9pt
     c.setFillColor(title_color)
-    c.drawCentredString(x + w / 2, y - 14, title)
-    c.setFont(KRB, 15)
+    c.drawCentredString(x + w / 2, y - 16, title)
+    c.setFont(KR, 17)         # 카드 수치: 17pt (크게)
     c.setFillColor(val_color)
-    c.drawCentredString(x + w / 2, y - 32, value)
+    c.drawCentredString(x + w / 2, y - 36, value)
     if sub:
-        c.setFont(KR, 7.5)
+        c.setFont(KR, 8)
         c.setFillColor(GRAY)
-        c.drawCentredString(x + w / 2, y - h + 8, sub)
+        c.drawCentredString(x + w / 2, y - h + 9, sub)
 
 
 def draw_table(c, x, y, headers, rows, widths,
-               row_h=22, header_h=24,
+               row_h=26, header_h=26,
                left_cols=None, bold_col=None):
     """
     완전한 표 그리기. y = 헤더 상단 기준. 최종 바닥 y 반환.
@@ -146,18 +151,18 @@ def draw_table(c, x, y, headers, rows, widths,
         left_cols = set()
     total_w = sum(widths)
 
-    # 헤더
+    # 헤더 — 배경 네이비, 텍스트 흰색 11pt
     c.setFillColor(NAVY)
     c.rect(x, y - header_h, total_w, header_h, fill=1, stroke=0)
-    c.setFont(KRB, 9)
+    c.setFont(KR, 11)          # 표 헤더: 11pt
     c.setFillColor(WHITE)
     cx = x
     for h_txt, w in zip(headers, widths):
-        c.drawCentredString(cx + w / 2, y - header_h + 8, h_txt)
+        c.drawCentredString(cx + w / 2, y - header_h + (header_h - 11) / 2, h_txt)
         cx += w
     y -= header_h
 
-    # 데이터 행
+    # 데이터 행 — 10pt
     for ri, row in enumerate(rows):
         bg = WHITE if ri % 2 == 0 else LGRAY
         c.setFillColor(bg)
@@ -167,11 +172,10 @@ def draw_table(c, x, y, headers, rows, widths,
         c.rect(x, y - row_h, total_w, row_h, fill=0, stroke=1)
         cx = x
         for ci, (val, w) in enumerate(zip(row, widths)):
-            font = KRB if ci == bold_col else KR
             col = NAVY if ci == 0 else (GOLD if ci == bold_col else DGRAY)
-            c.setFont(font, 9)
+            c.setFont(KR, 10)  # 표 데이터: 10pt
             c.setFillColor(col)
-            text_y = y - row_h + (row_h - 9) / 2
+            text_y = y - row_h + (row_h - 10) / 2
             if ci in left_cols:
                 c.drawString(cx + 6, text_y, str(val))
             else:
@@ -181,17 +185,17 @@ def draw_table(c, x, y, headers, rows, widths,
     return y
 
 
-def bullet_list(c, items, x, y, max_w, font_size=9, lh=16, bullet_color=GOLD):
-    c.setFillColor(bullet_color)
+def bullet_list(c, items, x, y, max_w, font_size=10, lh=18, bullet_color=GOLD):
     for item in items:
-        c.circle(x + 4, y + 3, 3, fill=1, stroke=0)
+        c.setFillColor(bullet_color)
+        c.circle(x + 5, y + 4, 3.5, fill=1, stroke=0)
         c.setFont(KR, font_size)
         c.setFillColor(DGRAY)
-        lines = wrap(c, item, max_w - 14, KR, font_size)
+        lines = wrap(c, item, max_w - 16, KR, font_size)
         for li, ln in enumerate(lines):
-            c.drawString(x + 12, y, ln)
+            c.drawString(x + 14, y, ln)
             y -= lh
-        y -= 2
+        y -= 3
     return y
 
 
@@ -282,7 +286,7 @@ def p2_business(c):
         '오드린 농업회사법인(주)는 3대째 포도농장을 운영해온 와인명인이 설립한 '
         '프리미엄 와이너리입니다. 국내산 포도를 100% 활용한 고품질 와인을 개발·제조·판매하며, '
         '와인명장의 고유 숙성 기술을 바탕으로 국내 와인 시장에서 독보적인 경쟁력을 갖추고 있습니다.',
-        MX, y, lw, KR, 10, DGRAY, 17)
+        MX, y, lw, KR, 11, DGRAY, 18)
 
     y2 -= 12
     divider(c, y2, MX, MX + lw)
@@ -298,19 +302,19 @@ def p2_business(c):
     for i, step in enumerate(steps):
         bg = NAVY if i % 2 == 0 else BLUE
         c.setFillColor(bg)
-        c.roundRect(sx, y2 - 36, sw2, 36, 3, fill=1, stroke=0)
-        c.setFont(KR, 8)
+        c.roundRect(sx, y2 - 40, sw2, 40, 3, fill=1, stroke=0)
+        c.setFont(KR, 9)
         c.setFillColor(WHITE)
         lines = step.split('\n')
-        ly = y2 - 36 + (36 + len(lines) * 10) / 2 - 5
+        ly = y2 - 40 + (40 + len(lines) * 11) / 2 - 5
         for ln in lines:
             c.drawCentredString(sx + sw2 / 2, ly, ln)
-            ly -= 12
+            ly -= 13
         sx += sw2 + 4
         if i < len(steps) - 1:
-            c.setFont(KR, 9)
+            c.setFont(KR, 10)
             c.setFillColor(GOLD)
-            c.drawCentredString(sx - 2, y2 - 18, '▶')
+            c.drawCentredString(sx - 2, y2 - 20, '▶')
 
     # 오른쪽 브랜드 카드 (오른쪽 38%)
     rx = MX + lw + 20
@@ -376,19 +380,19 @@ def p3_strengths(c):
         c.setFillColor(bar_color)
         c.roundRect(cx2, cy2 - card_h, 4, card_h, 2, fill=1, stroke=0)
 
-        c.setFont(KRB, 11)
+        c.setFont(KR, 12)        # 강점 카드 제목: 12pt
         c.setFillColor(NAVY)
-        c.drawString(cx2 + 14, cy2 - 18, title)
+        c.drawString(cx2 + 14, cy2 - 20, title)
 
-        text_block(c, desc, cx2 + 14, cy2 - 34, card_w - 20, KR, 9, DGRAY, 15)
+        text_block(c, desc, cx2 + 14, cy2 - 38, card_w - 20, KR, 10, DGRAY, 16)
 
     # 하단 경쟁 우위 요약
     boty = CONTENT_BOT
     c.setFillColor(NAVY2)
-    c.roundRect(MX, boty, CW, 20, 3, fill=1, stroke=0)
-    c.setFont(KR, 9)
+    c.roundRect(MX, boty, CW, 22, 3, fill=1, stroke=0)
+    c.setFont(KR, 10)
     c.setFillColor(GOLD)
-    c.drawCentredString(SW / 2, boty + 6,
+    c.drawCentredString(SW / 2, boty + 7,
         '특허 기술  ×  와인명인 숙성  ×  국내산 원료  ×  ISO 22000  —  4중 경쟁력')
 
 
@@ -439,17 +443,17 @@ def p4_achievements(c):
     ]
     for aw in awards:
         c.setFillColor(LGRAY)
-        c.roundRect(rx, ry - 28, rw, 26, 3, fill=1, stroke=0)
+        c.roundRect(rx, ry - 30, rw, 28, 3, fill=1, stroke=0)
         c.setFillColor(GOLD)
-        c.circle(rx + 12, ry - 14, 4, fill=1, stroke=0)
-        c.setFont(KR, 9)
+        c.circle(rx + 12, ry - 15, 4, fill=1, stroke=0)
+        c.setFont(KR, 10)
         c.setFillColor(DGRAY)
         lines = aw.split('\n')
-        ly2 = ry - 10
+        ly2 = ry - 11
         for ln in lines:
-            c.drawString(rx + 22, ly2, ln)
-            ly2 -= 13
-        ry -= 32
+            c.drawString(rx + 24, ly2, ln)
+            ly2 -= 14
+        ry -= 34
 
 
 def p5_ceo(c):
@@ -464,12 +468,12 @@ def p5_ceo(c):
     c.setLineWidth(2.5)
     c.line(MX, y, MX, y - 52)
 
-    c.setFont(KRB, 20)
+    c.setFont(KR, 22)
     c.setFillColor(NAVY)
-    c.drawString(MX + 16, y - 20, '박천명  대표이사')
-    c.setFont(KR, 10)
+    c.drawString(MX + 16, y - 22, '박천명  대표이사')
+    c.setFont(KR, 11)
     c.setFillColor(BLUE)
-    c.drawString(MX + 16, y - 38, '오드린 농업회사법인(주)  |  와인명인  |  3대째 포도농장 운영')
+    c.drawString(MX + 16, y - 42, '오드린 농업회사법인(주)  |  와인명인  |  3대째 포도농장 운영')
 
     y -= 62
 
@@ -511,13 +515,13 @@ def p5_ceo(c):
         c.setFillColor(GOLD)
         c.circle(rx + 10, ry - 13, 3.5, fill=1, stroke=0)
         lines2 = aw.split('\n')
-        ly3 = ry - 9
-        c.setFont(KR, 8.5)
+        ly3 = ry - 10
+        c.setFont(KR, 10)
         c.setFillColor(DGRAY)
         for ln in lines2:
             c.drawString(rx + 20, ly3, ln)
-            ly3 -= 12
-        ry -= 30
+            ly3 -= 14
+        ry -= 34
 
 
 def p6_market(c):
@@ -541,8 +545,8 @@ def p6_market(c):
         '국내 와인 시장은 1인 가구 증가·홈술 문화·건강 지향 소비 트렌드에 힘입어 연평균 3.6% 안정적 성장세를 유지합니다. '
         '수입 와인이 시장 대부분을 차지하는 가운데, "국내산 포도 100% + 와인명인 양조"는 국내 시장에서 '
         '거의 유일한 포지셔닝으로 강력한 차별화 요소가 됩니다.',
-        MX, y, CW, KR, 9.5, DGRAY, 16)
-    y -= 52
+        MX, y, CW, KR, 11, DGRAY, 18)
+    y -= 56
 
     divider(c, y)
     y -= 14
@@ -568,7 +572,7 @@ def p7_revenue1(c):
     # 헤더 아래 골드 서브 배너
     c.setFillColor(GOLD)
     c.rect(0, SH - HEADER_H - 26, SW, 24, fill=1, stroke=0)
-    c.setFont(KRB, 11)
+    c.setFont(KR, 13)
     c.setFillColor(NAVY)
     c.drawCentredString(SW / 2, SH - HEADER_H - 17, '오드린 농업회사법인(주)  매출 계획')
 
@@ -603,15 +607,15 @@ def p7_revenue1(c):
     for title, val, bg, vc in milestones:
         c.setFillColor(bg)
         c.roundRect(cx2, CONTENT_BOT, cw2, card_h, 4, fill=1, stroke=0)
-        c.setFont(KR, 8)
+        c.setFont(KR, 10)
         c.setFillColor(LBLUE)
-        c.drawCentredString(cx2 + cw2 / 2, CONTENT_BOT + card_h - 14, title)
-        c.setFont(KRB, 13)
+        c.drawCentredString(cx2 + cw2 / 2, CONTENT_BOT + card_h - 16, title)
+        c.setFont(KR, 15)
         c.setFillColor(vc)
-        c.drawCentredString(cx2 + cw2 / 2, CONTENT_BOT + card_h / 2 - 6, val)
-        c.setFont(KR, 8)
+        c.drawCentredString(cx2 + cw2 / 2, CONTENT_BOT + card_h / 2 - 7, val)
+        c.setFont(KR, 9)
         c.setFillColor(GRAY)
-        c.drawCentredString(cx2 + cw2 / 2, CONTENT_BOT + 10, '원')
+        c.drawCentredString(cx2 + cw2 / 2, CONTENT_BOT + 11, '원')
         cx2 += cw2 + 6
 
 
@@ -620,7 +624,7 @@ def p8_revenue2(c):
     slide_header(c, '매출 향상 계획  (2)  ★', 8)
     c.setFillColor(GOLD)
     c.rect(0, SH - HEADER_H - 26, SW, 24, fill=1, stroke=0)
-    c.setFont(KRB, 11)
+    c.setFont(KR, 13)
     c.setFillColor(NAVY)
     c.drawCentredString(SW / 2, SH - HEADER_H - 17, '채널별 세부 달성 목표')
 
@@ -664,22 +668,22 @@ def p8_revenue2(c):
         c.setFillColor(bar_col)
         c.roundRect(cx2, cy2 - ch_h, 4, ch_h, 2, fill=1, stroke=0)
 
-        c.setFont(KRB, 10)
+        c.setFont(KR, 12)
         c.setFillColor(NAVY)
-        c.drawString(cx2 + 12, cy2 - 16, title)
+        c.drawString(cx2 + 12, cy2 - 17, title)
 
-        text_block(c, body, cx2 + 12, cy2 - 32, ch_w - 80, KR, 8.5, DGRAY, 13)
+        text_block(c, body, cx2 + 12, cy2 - 34, ch_w - 90, KR, 10, DGRAY, 15)
 
         # 요약 박스 (오른쪽)
-        sb_w = 72
+        sb_w = 82
         sb_h = ch_h - 14
         c.setFillColor(bar_col)
         c.roundRect(cx2 + ch_w - sb_w - 4, cy2 - ch_h + 6, sb_w, sb_h, 3, fill=1, stroke=0)
-        c.setFont(KRB, 8)
+        c.setFont(KR, 9)
         c.setFillColor(WHITE if bar_col != GOLD else NAVY)
-        for li, ln in enumerate(wrap(c, summary, sb_w - 8, KRB, 8)):
+        for li, ln in enumerate(wrap(c, summary, sb_w - 8, KR, 9)):
             c.drawCentredString(cx2 + ch_w - sb_w / 2 - 4,
-                                cy2 - ch_h + sb_h - 12 - li * 12, ln)
+                                cy2 - ch_h + sb_h - 14 - li * 13, ln)
 
 
 def p9_evidence(c):
@@ -701,8 +705,8 @@ def p9_evidence(c):
         '연평균 3.6% 성장세를 지속 중입니다.\n\n'
         '국내산 포도 100%로 제조한 와인은 전체 시장의 극히 일부에 불과하여, '
         '오드린의 시장 진입 공간은 매우 넓습니다.',
-        MX, y, lw, KR, 9.5, DGRAY, 16)
-    y -= 72
+        MX, y, lw, KR, 11, DGRAY, 18)
+    y -= 80
 
     divider(c, y, MX, MX + lw)
     y -= 16
@@ -734,17 +738,17 @@ def p9_evidence(c):
         '거래처 20개 + B2B 10개사 수주 진행 중',
         '수출 가능성 — 아시아 시장 진입 기반 갖춤',
     ]
-    ry = bullet_list(c, evidences, rx, ry, rw, font_size=9, lh=18)
+    ry = bullet_list(c, evidences, rx, ry, rw, font_size=10, lh=19)
 
     # 결론 박스
     c.setFillColor(NAVY2)
-    c.roundRect(MX, CONTENT_BOT, CW, 24, 3, fill=1, stroke=0)
+    c.roundRect(MX, CONTENT_BOT, CW, 26, 3, fill=1, stroke=0)
     c.setStrokeColor(GOLD)
     c.setLineWidth(1)
-    c.roundRect(MX, CONTENT_BOT, CW, 24, 3, fill=0, stroke=1)
-    c.setFont(KR, 9)
+    c.roundRect(MX, CONTENT_BOT, CW, 26, 3, fill=0, stroke=1)
+    c.setFont(KR, 10)
     c.setFillColor(WHITE)
-    c.drawCentredString(SW / 2, CONTENT_BOT + 8,
+    c.drawCentredString(SW / 2, CONTENT_BOT + 9,
         '13조원 시장 × 연 3.6% 성장 × 국내산 와인 희소성 × 검증된 기술력  →  충분한 매출 달성 근거 확보')
 
 
@@ -772,7 +776,7 @@ def p10_funds(c):
     y -= 2
     c.setFillColor(NAVY)
     c.rect(MX, y - 28, CW, 28, fill=1, stroke=0)
-    c.setFont(KRB, 12)
+    c.setFont(KR, 13)
     c.setFillColor(WHITE)
     c.drawString(MX + 12, y - 18, '총 필요 자금')
     c.setFillColor(GOLD)
@@ -797,15 +801,15 @@ def p10_funds(c):
         fg = WHITE if bg != LGRAY else DGRAY
         c.setFillColor(bg)
         c.roundRect(qx, CONTENT_BOT, qw, qh, 3, fill=1, stroke=0)
-        c.setFont(KRB, 9)
+        c.setFont(KR, 11)
         c.setFillColor(GOLD if bg != LGRAY else NAVY)
-        c.drawCentredString(qx + qw / 2, CONTENT_BOT + qh - 14, qname)
-        c.setFont(KR, 8.5)
+        c.drawCentredString(qx + qw / 2, CONTENT_BOT + qh - 16, qname)
+        c.setFont(KR, 10)
         c.setFillColor(fg)
-        py2 = CONTENT_BOT + qh - 30
+        py2 = CONTENT_BOT + qh - 34
         for ln in qplan.split('\n'):
             c.drawCentredString(qx + qw / 2, py2, ln)
-            py2 -= 13
+            py2 -= 15
         qx += qw + 3
 
 
@@ -818,7 +822,7 @@ def p11_closing(c):
     c.rect(0, SH - 6, SW, 6, fill=1, stroke=0)
     c.rect(0, 0, SW, 5, fill=1, stroke=0)
 
-    c.setFont(KRB, 52)
+    c.setFont(KR, 52)
     c.setFillColor(WHITE)
     c.drawCentredString(SW / 2, SH * 0.60, 'THANK YOU.')
 
@@ -826,20 +830,20 @@ def p11_closing(c):
     c.setLineWidth(1)
     c.line(SW / 2 - 160, SH * 0.54, SW / 2 + 160, SH * 0.54)
 
-    c.setFont(KRB, 16)
+    c.setFont(KR, 18)
     c.setFillColor(GOLD)
     c.drawCentredString(SW / 2, SH * 0.47, '오드린 농업회사법인(주)')
 
-    c.setFont(KR, 12)
+    c.setFont(KR, 14)
     c.setFillColor(LBLUE)
     c.drawCentredString(SW / 2, SH * 0.40, '대표이사  박천명')
 
-    c.setFont(KR, 11)
+    c.setFont(KR, 13)
     c.setFillColor(colors.HexColor('#8AADCF'))
     c.drawCentredString(SW / 2, SH * 0.31, 'T. 010-2466-7789')
     c.drawCentredString(SW / 2, SH * 0.24, '브랜드: 월류봉  ·  베베마루')
 
-    c.setFont(KR, 8)
+    c.setFont(KR, 9)
     c.setFillColor(GRAY)
     c.drawCentredString(SW / 2, 18,
         '본 사업계획서는 정책자금 신청용 초안입니다. 금융기관 제출 전 전문가 검토를 권장합니다.')
