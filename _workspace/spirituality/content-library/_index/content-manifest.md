@@ -34,12 +34,12 @@
 | 산출물 | 상태 | 위치 |
 |------|------|------|
 | 00_track-overview.md | ✅ | 저장소 |
-| theology-statement.md | 미작성 | 저장소 (작성 시) |
-| workbook-master.md | 미작성 | 로컬 (12주 종합본) |
-| small-group-leader-guide.md | 미작성 | 저장소 |
-| practice-protocols.md | 미작성 | 저장소 |
-| slide-system.md | 미작성 | 저장소 |
-| red-team-review.md | 미작성 | 저장소 |
+| theology-statement.md | ✅ (2026-05-04) | 저장소 |
+| red-team-review.md | ✅ (2026-05-04) | 저장소 |
+| workbook-master.md | 미작성 (필요 시) | — |
+| small-group-leader-guide.md | 미작성 (필요 시) | — |
+| practice-protocols.md | 미작성 (필요 시) | — |
+| slide-system.md | 미작성 (필요 시) | — |
 
 ---
 
