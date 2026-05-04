@@ -1,0 +1,16 @@
+# 회당 콘텐츠는 git 추적에서 제외 — 노트북 바탕화면 폴더에서 관리
+_workspace/spirituality/content-library/**/weeks/
+_workspace/spirituality/content-library/**/track-*/weeks/
+
+# 로컬 작업 임시 파일
+_workspace/spirituality/_local/
+_workspace/spirituality/_drafts/
+
+# 시스템
+.DS_Store
+*.swp
+*~
+__pycache__/
+*.pyc
+.venv/
+node_modules/
