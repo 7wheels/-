@@ -1,888 +1,781 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-(주)미래스타푸드 정부지원사업 인포그래픽 리포트 생성기
-Powered by 히어컴퍼니 기업컨설팅
+(주)미래스타푸드 정부지원사업 리포트 PDF 생성기
+- 작성: 히어컴퍼니 기업컨설팅 (HearCompany Corporate Consulting)
+- 작성일: 2026-05-07
+- 모드: 실시간 크롤링 기반 6공고 매칭 / D-day 컬럼 / 공고 진입 링크 클릭 가능
 """
 
-import os
 import io
+import os
 import sys
 import urllib.request
-from datetime import datetime
+import subprocess
 
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-import numpy as np
 
-from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import mm
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_RIGHT
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.pdfbase.cidfonts import UnicodeCIDFont
 from reportlab.platypus import (
     SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle,
-    PageBreak, Image as RLImage, KeepTogether
+    PageBreak, Image as RLImage,
 )
-from reportlab.platypus.flowables import HRFlowable
 
-# ---------------------------------------------------------------------------
-# 한국어 폰트 등록 (TTF 우선, 실패 시 UnicodeCIDFont 폴백)
-# ---------------------------------------------------------------------------
-def register_korean_font():
-    candidates = [
-        "/System/Library/Fonts/AppleGothic.ttf",
-        "C:/Windows/Fonts/malgun.ttf",
-        "/usr/share/fonts/truetype/nanum/NanumGothic.ttf",
-        "/usr/share/fonts/opentype/nanum/NanumGothic.ttf",
-        "/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc",
-        "/tmp/NanumGothic.ttf",
-    ]
-    for fp in candidates:
-        if os.path.exists(fp):
-            try:
-                pdfmetrics.registerFont(TTFont("KR", fp))
-                return ("ttf", fp)
-            except Exception:
-                continue
-    # 다운로드 시도
-    try:
-        url = "https://github.com/google/fonts/raw/main/ofl/nanumgothic/NanumGothic-Regular.ttf"
-        dst = "/tmp/NanumGothic.ttf"
-        urllib.request.urlretrieve(url, dst)
-        pdfmetrics.registerFont(TTFont("KR", dst))
-        return ("ttf", dst)
-    except Exception:
-        # 폴백: reportlab 내장 CID 한글 폰트
-        pdfmetrics.registerFont(UnicodeCIDFont("HYSMyeongJo-Medium"))
-        # alias 'KR' to CID font
-        from reportlab.pdfbase.pdfmetrics import registerFontFamily
-        # registerFont with same name to alias
-        return ("cid", "HYSMyeongJo-Medium")
 
-KR_FONT_KIND, KR_FONT_REF = register_korean_font()
-KR_FONT_NAME = "KR" if KR_FONT_KIND == "ttf" else KR_FONT_REF
+# ============================================================
+# 1. 한국어 폰트 등록
+# ============================================================
 
-# matplotlib 한글 폰트
-from matplotlib import font_manager as fm
-if KR_FONT_KIND == "ttf":
-    fm.fontManager.addfont(KR_FONT_REF)
-    kr_name = fm.FontProperties(fname=KR_FONT_REF).get_name()
-    plt.rcParams["font.family"] = kr_name
+FONT_CANDIDATES = [
+    "/tmp/NanumGothic.ttf",
+    "/System/Library/Fonts/AppleGothic.ttf",
+    "C:/Windows/Fonts/malgun.ttf",
+    "/usr/share/fonts/truetype/nanum/NanumGothic.ttf",
+    "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
+]
+
+KR_FONT_PATH = None
+for fp in FONT_CANDIDATES:
+    if os.path.exists(fp):
+        KR_FONT_PATH = fp
+        break
+
+if KR_FONT_PATH is None:
+    print("[INFO] Korean font not found - downloading NanumGothic...")
+    KR_FONT_PATH = "/tmp/NanumGothic.ttf"
+    urllib.request.urlretrieve(
+        "https://github.com/google/fonts/raw/main/ofl/nanumgothic/NanumGothic-Regular.ttf",
+        KR_FONT_PATH,
+    )
+
+pdfmetrics.registerFont(TTFont("KR", KR_FONT_PATH))
+pdfmetrics.registerFont(TTFont("KR-Bold", KR_FONT_PATH))
+
+plt.rcParams["font.family"] = "DejaVu Sans"
+try:
+    from matplotlib import font_manager as fm
+    fm.fontManager.addfont(KR_FONT_PATH)
+    plt.rcParams["font.family"] = fm.FontProperties(fname=KR_FONT_PATH).get_name()
+except Exception as e:
+    print(f"[WARN] matplotlib Korean font setup: {e}")
 plt.rcParams["axes.unicode_minus"] = False
 
-# ---------------------------------------------------------------------------
-# 브랜드 컬러
-# ---------------------------------------------------------------------------
+
+# ============================================================
+# 2. 브랜드 컬러 / 스타일
+# ============================================================
+
 NAVY = colors.HexColor("#1F4E79")
 BLUE = colors.HexColor("#2E75B6")
-LIGHT_BLUE = colors.HexColor("#DEEAF1")
+LIGHT_BG = colors.HexColor("#DEEAF1")
 GREEN = colors.HexColor("#00B050")
 ORANGE = colors.HexColor("#FF8C00")
 RED = colors.HexColor("#C00000")
 GRAY = colors.HexColor("#595959")
-LIGHT_GRAY = colors.HexColor("#F2F2F2")
-GOLD = colors.HexColor("#BF9000")
+LIGHTGRAY = colors.HexColor("#D9D9D9")
 
-# ---------------------------------------------------------------------------
-# 데이터: 미래스타푸드 매칭 공고 (추정 기반)
-# ---------------------------------------------------------------------------
-COMPANY = {
-    "name": "(주)미래스타푸드",
-    "industry": "육가공업 (KSIC C10120 추정)",
-    "products": "햄·소시지·분쇄가공육·HMR(추정)",
-    "cert": "HACCP 의무 보유 가정 (확인 필요)",
-    "size": "중소기업 (가정)",
-}
+styles = getSampleStyleSheet()
 
-# 카테고리 맵
-CATEGORY_MAP = [
-    {
-        "code": "A",
-        "title": "정책자금·운영자금",
-        "color": "#1F4E79",
-        "items": "중진공·기보·신보·IBK·KDB / 농식품 진흥자금 / 농협 / 지자체",
-        "note": "융자·보증 — 자금 에이전트 이관"
-    },
-    {
-        "code": "B",
-        "title": "R&D·기술개발",
-        "color": "#2E75B6",
-        "items": "농기평(IPET) 고부가가치식품 / 산업부 식품바이오 / 중기부 디딤돌·기술혁신 / aT 신상품",
-        "note": "비융자 보조금 — 우선 공략"
-    },
-    {
-        "code": "C",
-        "title": "수출·해외진출",
-        "color": "#00B050",
-        "items": "aT K-Food / 코트라 / 농수산식품유통공사 / 중기부 수출바우처",
-        "note": "ISO·할랄 등 인증 선결 필요"
-    },
-    {
-        "code": "D",
-        "title": "인증·HACCP·식품안전",
-        "color": "#FF8C00",
-        "items": "식품안전관리인증원 HACCP·스마트HACCP / 식약처 시설개선 / 이노비즈·벤처 / ISO22000",
-        "note": "직접 보조금 + 간접 가점 효과"
-    },
-    {
-        "code": "E",
-        "title": "스마트공장·디지털·시설",
-        "color": "#BF9000",
-        "items": "중기부 스마트공장 식품제조 특화 / 농식품부 스마트팩토리 / 산업부 DX / 지자체 식품가공단지",
-        "note": "HACCP과 직결 — 시너지 큼"
-    },
-]
+style_title = ParagraphStyle(
+    "TitleKR", parent=styles["Title"], fontName="KR", fontSize=24,
+    leading=30, textColor=colors.white, alignment=1,
+)
+style_subtitle = ParagraphStyle(
+    "SubtitleKR", parent=styles["Title"], fontName="KR", fontSize=14,
+    leading=20, textColor=colors.white, alignment=1,
+)
+style_h1 = ParagraphStyle(
+    "H1KR", parent=styles["Heading1"], fontName="KR", fontSize=16,
+    leading=22, textColor=NAVY, spaceAfter=8,
+)
+style_h2 = ParagraphStyle(
+    "H2KR", parent=styles["Heading2"], fontName="KR", fontSize=12,
+    leading=16, textColor=NAVY, spaceAfter=4,
+)
+style_body = ParagraphStyle(
+    "BodyKR", parent=styles["BodyText"], fontName="KR", fontSize=9.5,
+    leading=14, textColor=colors.black, spaceAfter=4,
+)
+style_small = ParagraphStyle(
+    "SmallKR", parent=styles["BodyText"], fontName="KR", fontSize=8,
+    leading=11, textColor=GRAY,
+)
+style_link = ParagraphStyle(
+    "LinkKR", parent=styles["BodyText"], fontName="KR", fontSize=8,
+    leading=11, textColor=BLUE,
+)
+style_white = ParagraphStyle(
+    "WhiteKR", parent=styles["BodyText"], fontName="KR", fontSize=10,
+    leading=14, textColor=colors.white, alignment=1,
+)
+
+
+# ============================================================
+# 3. 공고 데이터 (실시간 크롤링 결과 — 2026-05-07 기준)
+# ============================================================
 
 ANNOUNCEMENTS = [
     {
         "no": "①",
-        "title": "고부가가치식품기술개발 R&D",
-        "source": "농림축산식품부 / 농기평(IPET)",
-        "deadline": "연 1~2회 공모 (4~6월 추정)",
-        "budget": "과제당 3~7억원 (2~3년)",
-        "fit": "상",
-        "category": "R&D",
-        "summary": "미래대응식품·식품 품질안전 분야 R&D. 식육 신제품·공정혁신·발효육·고령친화 식육 적합.",
-        "difficulty": 4.5,
-        "effect": 5.0,
-        "size_num": 500,
-        "start_day": 10,
-        "duration": 60,
+        "title": "농식품 현지화지원사업 (현지 전문기관 자문)",
+        "code": "PBLN_000000000118524",
+        "agency": "농식품부 / aT",
+        "period": "2026-01-06 ~ 2026-06-30",
+        "dday": "D-54",
+        "dday_color": GREEN,
+        "amount": "연 5천만 원 한도",
+        "fit": "★★★★★ 5/5",
+        "diff": "낮음",
+        "url": "https://www.bizinfo.go.kr/sii/siia/selectSIIA200Detail.do?pblancId=PBLN_000000000118524",
+        "x": 2.5,
+        "y": 4.5,
+        "size": 500,
+        "summary": "수출국 현지 전문기관 자문비 정부 90% 부담. 라벨링·할랄·HACCP 동등성 인증 자문 직결.",
     },
     {
         "no": "②",
-        "title": "식품 특화 스마트공장 보급",
-        "source": "중기부·식약처·삼성전자",
-        "deadline": "상·하반기 분할 모집",
-        "budget": "고도화1: 1억 / 고도화2: 최대 2~4억",
-        "fit": "상",
-        "category": "시설/DX",
-        "summary": "HACCP 보유 식품기업 우대. 스마트HACCP·MES 도입으로 CCP 자동화·로트추적성 확보.",
-        "difficulty": 2.8,
-        "effect": 4.5,
-        "size_num": 250,
-        "start_day": 0,
-        "duration": 45,
+        "title": "농식품 현지화지원사업 (수입등록·검사)",
+        "code": "PBLN_000000000118527",
+        "agency": "농식품부 / aT",
+        "period": "2026-01-06 ~ 2026-12-31",
+        "dday": "D-238",
+        "dday_color": GREEN,
+        "amount": "연 5천만 원 한도",
+        "fit": "★★★★★ 5/5",
+        "diff": "낮음",
+        "url": "https://www.bizinfo.go.kr/sii/siia/selectSIIA200Detail.do?pblancId=PBLN_000000000118527",
+        "x": 2.0,
+        "y": 4.5,
+        "size": 500,
+        "summary": "FDA·중국·카타르 등 수입등록 대행비·식품검사비 환급. 영수증 기반 정산.",
     },
     {
         "no": "③",
-        "title": "HACCP 고도화·스마트HACCP 지원",
-        "source": "식품안전관리인증원",
-        "deadline": "상시 (예산 소진 시까지)",
-        "budget": "컨설팅·심사비 + 시설 3천만~1억",
-        "fit": "상",
-        "category": "인증",
-        "summary": "HACCP 운영 식품기업 대상 디지털화 지원. 스마트공장과 연동 시 시너지 극대화.",
-        "difficulty": 1.8,
-        "effect": 3.5,
-        "size_num": 80,
-        "start_day": 0,
-        "duration": 200,
+        "title": "2026년 중소기업 정책자금 융자 (중진공)",
+        "code": "PBLN_000000000116941",
+        "agency": "중기부 / 중진공",
+        "period": "1차 ~ 2026-05-08, 분기별 수시",
+        "dday": "D-1 긴급",
+        "dday_color": RED,
+        "amount": "시설 60억 / 운전 5억",
+        "fit": "★★★★☆ 4/5",
+        "diff": "중상",
+        "url": "https://www.bizinfo.go.kr/web/lay1/bbs/S1T122C128/AS/74/view.do?pblancId=PBLN_000000000116941",
+        "x": 4.0,
+        "y": 4.0,
+        "size": 6000,
+        "summary": "운전·시설·혁신성장·재도약 자금 통합. 5/8까지 1차 잔여분 즉시 신청 권고.",
     },
     {
         "no": "④",
-        "title": "aT 농식품 수출 지원",
-        "source": "한국농수산식품유통공사",
-        "deadline": "연중 분기별 공모",
-        "budget": "수출물류비·해외마케팅·박람회 지원",
-        "fit": "중",
-        "category": "수출",
-        "summary": "K-Food 글로벌 진출. 식육 가공품 ISO·할랄 선결 필요. K-바비큐·스낵 라인 시장 확대.",
-        "difficulty": 3.0,
-        "effect": 4.0,
-        "size_num": 150,
-        "start_day": 30,
-        "duration": 60,
+        "title": "식품기업 인증 지원사업 (식품진흥원)",
+        "code": "FOODPOLIS-2026",
+        "agency": "농식품부 / 식품진흥원",
+        "period": "2026 연중 상시",
+        "dday": "상시",
+        "dday_color": GREEN,
+        "amount": "인증당 1~3천만 원",
+        "fit": "★★★★★ 5/5",
+        "diff": "낮음",
+        "url": "https://www.foodpolis.kr/web/Board/3985/detailView.do",
+        "x": 1.5,
+        "y": 4.0,
+        "size": 200,
+        "summary": "HACCP·GMP·ISO 22000·FSSC 22000·KOSHER·NDI/GRAS 등 인증비 70~90% 정부 부담.",
     },
     {
         "no": "⑤",
-        "title": "창업성장기술개발·기술혁신개발",
-        "source": "중기부 / TIPA",
-        "deadline": "연 2~3회 공모",
-        "budget": "디딤돌 1.2억 / 기술혁신 6억 (1~3년)",
-        "fit": "중",
-        "category": "R&D",
-        "summary": "업력별 트랙(창업 7년 vs 일반). 농기평 R&D와 중복 지원 제한 확인 필요.",
-        "difficulty": 3.8,
-        "effect": 4.0,
-        "size_num": 200,
-        "start_day": 15,
-        "duration": 45,
+        "title": "신용보증기금 운전·시설자금 보증 (KODIT)",
+        "code": "KODIT-2026",
+        "agency": "금융위 / KODIT",
+        "period": "2026 연중 상시",
+        "dday": "상시",
+        "dday_color": ORANGE,
+        "amount": "운전 매출 1/3 / 시설 100%",
+        "fit": "★★★☆☆ 3/5",
+        "diff": "중",
+        "url": "https://www.kodit.co.kr/kodit/na/ntt/selectNttList.do?bbsId=407&mi=2518",
+        "x": 3.5,
+        "y": 3.0,
+        "size": 3000,
+        "summary": "보증료 0.5~3.0% / 식품제조업 우대. 중진공 미선정 시 백업.",
     },
     {
         "no": "⑥",
-        "title": "이노비즈 인증 + 벤처기업 확인",
-        "source": "이노비즈협회·기보·중기부",
-        "deadline": "상시 (평가형)",
-        "budget": "직접 자금 X — 세제·정책자금 가점·보증료 우대",
-        "fit": "중",
-        "category": "인증",
-        "summary": "정책자금 가점·세액공제 50%·보증료 0.5%p 우대. 다른 공고 ROI를 1.3~1.5배 증대.",
-        "difficulty": 2.8,
-        "effect": 3.5,
-        "size_num": 60,
-        "start_day": 20,
-        "duration": 90,
-    },
-    {
-        "no": "⑦",
-        "title": "중진공 신성장기반자금 융자",
-        "source": "중소벤처기업진흥공단",
-        "deadline": "연중 (예산 소진 시)",
-        "budget": "시설 60억 / 운전 5억 한도 (저금리)",
-        "fit": "중",
-        "category": "정책자금(융자)",
-        "summary": "융자 성격 — 자금 에이전트 이관 권고. 시설 투자 임박 시 동시 신청 검토.",
-        "difficulty": 3.2,
-        "effect": 3.5,
-        "size_num": 600,
-        "start_day": 30,
-        "duration": 90,
+        "title": "기술보증기금 기술평가보증 (KIBO)",
+        "code": "KIBO-2026",
+        "agency": "중기부 / KIBO",
+        "period": "2026 연중 상시",
+        "dday": "상시",
+        "dday_color": ORANGE,
+        "amount": "일반 30억 / 우수 70억",
+        "fit": "★★★☆☆ 3/5",
+        "diff": "중",
+        "url": "https://www.kibo.or.kr/main/work/work010101.do",
+        "x": 3.8,
+        "y": 3.5,
+        "size": 3500,
+        "summary": "기술평가 결과 자체가 R&D 가점. 벤처 우대 0.5%p.",
     },
 ]
 
-# ---------------------------------------------------------------------------
-# 차트 생성
-# ---------------------------------------------------------------------------
-def make_priority_matrix():
-    fig, ax = plt.subplots(figsize=(9, 5.5), dpi=150)
-    fig.patch.set_facecolor("white")
 
-    color_map = {"상": "#00B050", "중": "#FF8C00", "하": "#C00000"}
-    for a in ANNOUNCEMENTS:
-        ax.scatter(a["difficulty"], a["effect"],
-                   s=a["size_num"] * 3,
-                   c=color_map[a["fit"]],
-                   alpha=0.55, edgecolors="#1F4E79", linewidth=1.5)
+# ============================================================
+# 4. 페이지 헤더·푸터
+# ============================================================
 
-    short_labels = ["고부가 R&D", "스마트공장(식품)", "HACCP 고도화",
-                    "aT 수출", "중기부 R&D", "이노비즈/벤처", "중진공 융자"]
-    for a, lab in zip(ANNOUNCEMENTS, short_labels):
-        ax.annotate(lab,
-                    (a["difficulty"], a["effect"]),
-                    xytext=(10, 8), textcoords="offset points",
-                    fontsize=9, color="#1F4E79", fontweight="bold")
-
-    ax.axhline(3.0, color="#BFBFBF", linestyle="--", linewidth=0.8)
-    ax.axvline(3.0, color="#BFBFBF", linestyle="--", linewidth=0.8)
-    ax.set_xlim(0.5, 5.2)
-    ax.set_ylim(2, 5.5)
-    ax.set_xlabel("신청 난이도 (낮음 ← → 높음)", fontsize=11, color="#1F4E79", fontweight="bold")
-    ax.set_ylabel("기대 효과 (낮음 ← → 높음)", fontsize=11, color="#1F4E79", fontweight="bold")
-    ax.set_title("미래스타푸드 우선순위 매트릭스 (버블 = 지원 규모)",
-                 fontsize=13, color="#1F4E79", fontweight="bold", pad=12)
-    ax.grid(True, alpha=0.2)
-    for spine in ax.spines.values():
-        spine.set_color("#BFBFBF")
-
-    ax.text(1.0, 5.25, "Quick Win", fontsize=10, color="#00B050", fontweight="bold")
-    ax.text(4.2, 5.25, "전략과제", fontsize=10, color="#1F4E79", fontweight="bold")
-    ax.text(1.0, 2.15, "기본 정비", fontsize=10, color="#595959")
-    ax.text(4.2, 2.15, "재검토", fontsize=10, color="#C00000")
-
-    plt.tight_layout()
-    buf = io.BytesIO()
-    fig.savefig(buf, format="png", dpi=150, bbox_inches="tight")
-    plt.close(fig)
-    buf.seek(0)
-    return buf
-
-def make_timeline():
-    fig, ax = plt.subplots(figsize=(9, 5), dpi=150)
-    fig.patch.set_facecolor("white")
-
-    color_map = {"상": "#00B050", "중": "#FF8C00", "하": "#C00000"}
-    titles = ["고부가 R&D", "스마트공장(식품)", "HACCP 고도화",
-              "aT 수출", "중기부 R&D", "이노비즈/벤처", "중진공 융자"]
-    y_pos = np.arange(len(ANNOUNCEMENTS))
-
-    for i, a in enumerate(ANNOUNCEMENTS):
-        ax.barh(i, a["duration"], left=a["start_day"],
-                color=color_map[a["fit"]], alpha=0.75,
-                edgecolor="#1F4E79", linewidth=1)
-        ax.text(a["start_day"] + a["duration"] + 3, i,
-                a["deadline"], va="center", fontsize=8.5, color="#1F4E79")
-
-    ax.set_yticks(y_pos)
-    ax.set_yticklabels(titles, fontsize=10)
-    ax.invert_yaxis()
-    ax.set_xlabel("오늘로부터 경과일 (단위: 일)  ※ 추정 일정", fontsize=11, color="#1F4E79", fontweight="bold")
-    ax.set_title("신청 준비~마감 타임라인 (2026-05-07 기준 추정)",
-                 fontsize=13, color="#1F4E79", fontweight="bold", pad=12)
-    ax.grid(True, alpha=0.2, axis="x")
-    ax.set_xlim(0, 280)
-    for spine in ax.spines.values():
-        spine.set_color("#BFBFBF")
-
-    plt.tight_layout()
-    buf = io.BytesIO()
-    fig.savefig(buf, format="png", dpi=150, bbox_inches="tight")
-    plt.close(fig)
-    buf.seek(0)
-    return buf
-
-# ---------------------------------------------------------------------------
-# PDF 빌드
-# ---------------------------------------------------------------------------
-def _on_page(canvas, doc):
-    """헤더·푸터 그리기"""
+def header_footer(canvas, doc):
     canvas.saveState()
-    # 헤더 라인
-    canvas.setStrokeColor(NAVY)
-    canvas.setLineWidth(0.5)
-    canvas.line(15*mm, A4[1] - 12*mm, A4[0] - 15*mm, A4[1] - 12*mm)
-    # 헤더 텍스트
-    canvas.setFont(KR_FONT_NAME, 8)
+    # Header bar
     canvas.setFillColor(NAVY)
-    canvas.drawString(15*mm, A4[1] - 10*mm, "(주)미래스타푸드 — 정부지원사업 매칭 리포트")
-    canvas.drawRightString(A4[0] - 15*mm, A4[1] - 10*mm, "히어컴퍼니 기업컨설팅 제공")
-    # 푸터 라인
-    canvas.line(15*mm, 12*mm, A4[0] - 15*mm, 12*mm)
-    canvas.setFillColor(GRAY)
-    canvas.setFont(KR_FONT_NAME, 8)
-    canvas.drawString(15*mm, 8*mm, f"발행일 {datetime.now().strftime('%Y-%m-%d')}  ·  추정 기반 — 실제 신청 전 공고문 원문 재확인 필수")
-    canvas.drawRightString(A4[0] - 15*mm, 8*mm, f"- {doc.page} -")
+    canvas.rect(0, A4[1] - 12 * mm, A4[0], 12 * mm, fill=1, stroke=0)
+    canvas.setFont("KR", 9)
+    canvas.setFillColor(colors.white)
+    canvas.drawString(15 * mm, A4[1] - 8 * mm,
+                      "(주)미래스타푸드  |  히어컴퍼니 기업컨설팅 (HearCompany)")
+    canvas.drawRightString(A4[0] - 15 * mm, A4[1] - 8 * mm,
+                           "정부지원사업 매칭 리포트  |  2026-05-07")
+    # Footer bar
+    canvas.setFillColor(LIGHT_BG)
+    canvas.rect(0, 0, A4[0], 10 * mm, fill=1, stroke=0)
+    canvas.setFont("KR", 8)
+    canvas.setFillColor(NAVY)
+    canvas.drawString(15 * mm, 4 * mm,
+                      "히어컴퍼니 (HearCompany) Corporate Consulting")
+    canvas.drawRightString(A4[0] - 15 * mm, 4 * mm,
+                           f"Page {doc.page}")
     canvas.restoreState()
 
-def build_pdf(pdf_path):
-    doc = SimpleDocTemplate(
-        pdf_path, pagesize=A4,
-        leftMargin=15*mm, rightMargin=15*mm,
-        topMargin=18*mm, bottomMargin=18*mm,
-        title="(주)미래스타푸드 정부지원사업 리포트",
-        author="히어컴퍼니 기업컨설팅",
-    )
 
-    styles = getSampleStyleSheet()
-    H1 = ParagraphStyle("H1", parent=styles["Heading1"], fontName=KR_FONT_NAME,
-                        fontSize=20, textColor=NAVY, spaceAfter=10, leading=26)
-    H2 = ParagraphStyle("H2", parent=styles["Heading2"], fontName=KR_FONT_NAME,
-                        fontSize=14, textColor=NAVY, spaceBefore=10, spaceAfter=8, leading=20)
-    H3 = ParagraphStyle("H3", parent=styles["Heading3"], fontName=KR_FONT_NAME,
-                        fontSize=11, textColor=BLUE, spaceBefore=6, spaceAfter=4, leading=16)
-    BODY = ParagraphStyle("BODY", parent=styles["BodyText"], fontName=KR_FONT_NAME,
-                          fontSize=10, textColor=colors.black, leading=15)
-    SMALL = ParagraphStyle("SMALL", parent=styles["BodyText"], fontName=KR_FONT_NAME,
-                           fontSize=8.5, textColor=GRAY, leading=12)
-    COVER_TITLE = ParagraphStyle("COVERT", parent=styles["Title"], fontName=KR_FONT_NAME,
-                                 fontSize=30, textColor=colors.white, alignment=TA_CENTER, leading=40)
-    COVER_SUB = ParagraphStyle("COVERS", parent=styles["Title"], fontName=KR_FONT_NAME,
-                               fontSize=16, textColor=LIGHT_BLUE, alignment=TA_CENTER, leading=24)
-    COVER_BR = ParagraphStyle("COVERB", parent=styles["BodyText"], fontName=KR_FONT_NAME,
-                              fontSize=11, textColor=colors.white, alignment=TA_CENTER, leading=16)
-    CARD_CAT = ParagraphStyle("CCAT", fontName=KR_FONT_NAME, fontSize=9, textColor=colors.white, alignment=TA_CENTER, leading=11)
-    CARD_TITLE = ParagraphStyle("CTITLE", fontName=KR_FONT_NAME, fontSize=10, textColor=NAVY, leading=14)
-    CARD_FIT = ParagraphStyle("CFIT", fontName=KR_FONT_NAME, fontSize=10, textColor=colors.white, alignment=TA_CENTER, leading=12)
+# ============================================================
+# 5. 차트 생성
+# ============================================================
 
-    story = []
+def make_priority_matrix():
+    # matplotlib에서 ①②③ 글리프 누락 회피 → 1,2,3 매핑
+    no_map = {"①": "1", "②": "2", "③": "3", "④": "4", "⑤": "5", "⑥": "6"}
+    fig, ax = plt.subplots(figsize=(10, 6))
+    for a in ANNOUNCEMENTS:
+        c = a["dday_color"].rgb()
+        ax.scatter(a["x"], a["y"], s=a["size"] * 0.3, alpha=0.55,
+                   color=(c[0], c[1], c[2]), edgecolors="black", linewidths=1.2)
+        ax.annotate(no_map.get(a["no"], a["no"]), (a["x"], a["y"]),
+                    ha="center", va="center",
+                    fontsize=14, weight="bold", color="white")
+        ax.annotate(a["title"][:18], (a["x"], a["y"] - 0.35),
+                    ha="center", va="top", fontsize=8)
 
-    # ====================================================================
-    # 표지
-    # ====================================================================
-    cover_tbl = Table(
-        [
-            [Spacer(1, 50*mm)],
-            [Paragraph("정부지원사업<br/>매칭 리포트", COVER_TITLE)],
-            [Spacer(1, 14*mm)],
-            [Paragraph("(주)미래스타푸드", COVER_SUB)],
-            [Spacer(1, 6*mm)],
-            [Paragraph("육가공업 (KSIC C10120 추정) · HACCP 보유 가정", COVER_BR)],
-            [Spacer(1, 70*mm)],
-            [Paragraph(f"발행일 : {datetime.now().strftime('%Y년 %m월 %d일')}", COVER_BR)],
-            [Spacer(1, 6*mm)],
-            [Paragraph("Powered by <b>히어컴퍼니 기업컨설팅</b>", COVER_BR)],
-            [Paragraph("HereCompany Consulting", COVER_BR)],
-            [Spacer(1, 4*mm)],
-            [Paragraph("본 자료는 공개정보 기반 추정 매칭 — 실제 신청 전 공고문 원문 재확인 필수", COVER_BR)],
-        ],
-        colWidths=[180*mm],
-    )
-    cover_tbl.setStyle(TableStyle([
+    ax.set_xlabel("신청 난이도 (1=낮음 → 5=높음)", fontsize=11)
+    ax.set_ylabel("기대 효과 (1=낮음 → 5=높음)", fontsize=11)
+    ax.set_title("우선순위 매트릭스 (버블 크기 = 지원 규모)",
+                 fontsize=13, weight="bold", color="#1F4E79")
+    ax.set_xlim(0.5, 5.0)
+    ax.set_ylim(2.0, 5.5)
+    ax.grid(True, alpha=0.3)
+    ax.axvline(x=3.0, color="gray", linestyle="--", alpha=0.5)
+    ax.axhline(y=3.5, color="gray", linestyle="--", alpha=0.5)
+    ax.text(0.7, 5.3, "Quick Win\n(쉽고 효과 큼)", fontsize=9,
+            color="#00B050", weight="bold")
+    ax.text(4.2, 5.3, "Strategic Bet\n(어렵지만 효과 큼)", fontsize=9,
+            color="#FF8C00", weight="bold")
+
+    buf = io.BytesIO()
+    fig.savefig(buf, format="png", dpi=150, bbox_inches="tight")
+    plt.close(fig)
+    buf.seek(0)
+    return buf
+
+
+def make_timeline():
+    no_map = {"①": "1", "②": "2", "③": "3", "④": "4", "⑤": "5", "⑥": "6"}
+    fig, ax = plt.subplots(figsize=(10, 4.5))
+    today_x = 0
+    timeline_data = []
+    for a in ANNOUNCEMENTS:
+        dday_str = a["dday"]
+        if "상시" in dday_str:
+            end = 240
+            start = -30
+        elif "긴급" in dday_str:
+            end = 1
+            start = -37
+        elif "D-" in dday_str:
+            try:
+                d = int(dday_str.split("D-")[1].split(" ")[0])
+                end = d
+                start = -120
+            except Exception:
+                end = 60
+                start = -30
+        else:
+            end = 60
+            start = -30
+        timeline_data.append((no_map.get(a["no"], a["no"]) + ". " + a["title"][:25], start, end, a["dday_color"]))
+
+    for i, (label, s, e, col) in enumerate(reversed(timeline_data)):
+        c = col.rgb()
+        ax.barh(i, e - s, left=s, color=(c[0], c[1], c[2]),
+                alpha=0.7, edgecolor="black", linewidth=0.8)
+        ax.text(e + 5, i, f"~D{e:+d}", va="center", fontsize=8, color="#333")
+
+    ax.axvline(x=today_x, color="red", linewidth=2, linestyle="--", alpha=0.8)
+    ax.text(today_x, len(timeline_data) - 0.3, "오늘\n(2026-05-07)",
+            ha="center", fontsize=9, color="red", weight="bold")
+
+    ax.set_yticks(range(len(timeline_data)))
+    ax.set_yticklabels([t[0] for t in reversed(timeline_data)], fontsize=8)
+    ax.set_xlabel("오늘 기준 일수 (마이너스 = 과거 시작 / 플러스 = 미래 마감)", fontsize=10)
+    ax.set_title("신청 타임라인 (2026-05-07 기준)",
+                 fontsize=13, weight="bold", color="#1F4E79")
+    ax.grid(True, alpha=0.3, axis="x")
+    ax.set_xlim(-150, 280)
+
+    buf = io.BytesIO()
+    fig.savefig(buf, format="png", dpi=150, bbox_inches="tight")
+    plt.close(fig)
+    buf.seek(0)
+    return buf
+
+
+# ============================================================
+# 6. 페이지 빌드
+# ============================================================
+
+def build_cover(story):
+    story.append(Spacer(1, 50 * mm))
+    cover_data = [
+        [Paragraph("정부지원사업 매칭 리포트", style_title)],
+        [Spacer(1, 10 * mm)],
+        [Paragraph("(주)미래스타푸드", style_title)],
+        [Paragraph("육가공업 (KSIC C10120)", style_subtitle)],
+        [Spacer(1, 30 * mm)],
+        [Paragraph("실시간 크롤링 기반 6공고 매칭", style_white)],
+        [Paragraph("작성일: 2026-05-07 (목)", style_white)],
+        [Spacer(1, 30 * mm)],
+        [Paragraph("히어컴퍼니 기업컨설팅", style_white)],
+        [Paragraph("HearCompany Corporate Consulting", style_white)],
+    ]
+    cover_table = Table(cover_data, colWidths=[170 * mm])
+    cover_table.setStyle(TableStyle([
         ("BACKGROUND", (0, 0), (-1, -1), NAVY),
-        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
         ("ALIGN", (0, 0), (-1, -1), "CENTER"),
-        ("LEFTPADDING", (0, 0), (-1, -1), 0),
-        ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+        ("TOPPADDING", (0, 0), (-1, -1), 8),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
     ]))
-    story.append(cover_tbl)
+    story.append(cover_table)
     story.append(PageBreak())
 
-    # ====================================================================
-    # 01. 헤드라인 요약 + Top 3 카드
-    # ====================================================================
-    story.append(Paragraph("01. 헤드라인 요약 — 추천 Top 3", H1))
-    story.append(HRFlowable(width="100%", thickness=2, color=BLUE, spaceAfter=10))
+
+def build_summary_cards(story):
+    story.append(Paragraph("추천 Top 3 공고", style_h1))
+    story.append(Spacer(1, 4 * mm))
+    story.append(Paragraph(
+        "오늘(2026-05-07) 기준 마감 안 된 공고 6개 중 미래스타푸드 적합도·시너지·즉시성 기준 상위 3선.",
+        style_body))
+    story.append(Spacer(1, 6 * mm))
 
     top3 = ANNOUNCEMENTS[:3]
-    fit_color = {"상": GREEN, "중": ORANGE, "하": RED}
-    cards = []
     for a in top3:
-        card = Table([
-            [Paragraph(f'<b>{a["category"]}</b>', CARD_CAT)],
-            [Paragraph(f'<b>{a["no"]} {a["title"]}</b>', CARD_TITLE)],
-            [Paragraph(f'출처 : {a["source"]}', SMALL)],
-            [Paragraph(f'<b>지원 규모</b>  {a["budget"]}', BODY)],
-            [Paragraph(f'<b>마감</b>  {a["deadline"]}', BODY)],
-            [Paragraph(f'적합도 <b>{a["fit"]}</b>', CARD_FIT)],
-        ], colWidths=[55*mm], rowHeights=[8*mm, 22*mm, 7*mm, 11*mm, 11*mm, 8*mm])
-        card.setStyle(TableStyle([
-            ("BACKGROUND", (0, 0), (0, 0), NAVY),
-            ("BACKGROUND", (0, 5), (0, 5), fit_color[a["fit"]]),
-            ("BACKGROUND", (0, 1), (0, 4), LIGHT_BLUE),
-            ("BOX", (0, 0), (-1, -1), 0.6, NAVY),
+        cells = [
+            [Paragraph(f"<b>{a['no']} {a['title']}</b>", style_white),
+             Paragraph(f"<b>{a['dday']}</b>", style_white)],
+            [Paragraph(f"기간: {a['period']}", style_body),
+             Paragraph(f"적합도: {a['fit']}", style_body)],
+            [Paragraph(f"규모: {a['amount']}", style_body),
+             Paragraph(f"난이도: {a['diff']}", style_body)],
+            [Paragraph(a["summary"], style_body), ""],
+            [Paragraph(
+                f'<link href="{a["url"]}" color="#2E75B6"><u>공고 진입: {a["url"][:75]}...</u></link>',
+                style_link), ""],
+        ]
+        t = Table(cells, colWidths=[125 * mm, 45 * mm])
+        t.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (-1, 0), a["dday_color"]),
+            ("BACKGROUND", (0, 1), (-1, -1), LIGHT_BG),
+            ("BOX", (0, 0), (-1, -1), 1, NAVY),
+            ("INNERGRID", (0, 1), (-1, -1), 0.3, LIGHTGRAY),
             ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
             ("LEFTPADDING", (0, 0), (-1, -1), 6),
             ("RIGHTPADDING", (0, 0), (-1, -1), 6),
             ("TOPPADDING", (0, 0), (-1, -1), 4),
             ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+            ("SPAN", (0, 3), (1, 3)),
+            ("SPAN", (0, 4), (1, 4)),
         ]))
-        cards.append(card)
+        story.append(t)
+        story.append(Spacer(1, 5 * mm))
 
-    cards_row = Table([cards], colWidths=[58*mm, 58*mm, 58*mm])
-    cards_row.setStyle(TableStyle([
-        ("VALIGN", (0, 0), (-1, -1), "TOP"),
-        ("LEFTPADDING", (0, 0), (-1, -1), 2),
-        ("RIGHTPADDING", (0, 0), (-1, -1), 2),
-    ]))
-    story.append(cards_row)
-    story.append(Spacer(1, 6*mm))
-
-    # 핵심 메시지
-    msg = Table([[Paragraph(
-        "<b>핵심 메시지</b><br/>"
-        "(주)미래스타푸드는 육가공(C10120 추정) 분야 중소기업으로, HACCP 의무 업종 특성에 맞춰 "
-        "<b>① 농기평 고부가가치식품 R&D + ② 식품 특화 스마트공장 + ③ HACCP 고도화 지원</b> "
-        "3개 공고를 우선 공략하는 것이 효율적입니다. 셋은 단순 병렬이 아니라 "
-        "<b>HACCP 고도화 → 스마트공장 → R&D 데이터 기반 신제품</b>의 연쇄 시너지가 성립합니다. "
-        "단, 공고 일정·금액·자격은 매년 변경되므로 신청 직전 원문 확인이 필수입니다.",
-        BODY)]], colWidths=[180*mm])
-    msg.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, -1), LIGHT_BLUE),
-        ("BOX", (0, 0), (-1, -1), 0.5, BLUE),
-        ("LEFTPADDING", (0, 0), (-1, -1), 10),
-        ("RIGHTPADDING", (0, 0), (-1, -1), 10),
-        ("TOPPADDING", (0, 0), (-1, -1), 8),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
-    ]))
-    story.append(msg)
     story.append(PageBreak())
 
-    # ====================================================================
-    # 02. 기업 프로파일
-    # ====================================================================
-    story.append(Paragraph("02. 기업 프로파일 (추정)", H1))
-    story.append(HRFlowable(width="100%", thickness=2, color=BLUE, spaceAfter=10))
 
-    prof_data = [
-        ["기업명", COMPANY["name"], "업종", COMPANY["industry"]],
-        ["주요 제품(추정)", COMPANY["products"], "보유 인증", COMPANY["cert"]],
-        ["기업 규모", COMPANY["size"], "리포트 일자", datetime.now().strftime("%Y-%m-%d")],
-        ["관심 분야", "정책자금 · 인증 · R&D · 수출 · 스마트공장", "", ""],
+def build_company_profile(story):
+    story.append(Paragraph("기업 프로파일", style_h1))
+    story.append(Spacer(1, 4 * mm))
+
+    profile_data = [
+        ["기업명", "(주)미래스타푸드"],
+        ["업종", "육가공업 (한국표준산업분류 KSIC C10120 식육가공업 추정)"],
+        ["추정 주력 품목", "햄 · 소시지 · 분쇄가공육 · 즉석조리식품"],
+        ["매출액", "미입력 (확보 시 정밀 매칭 가능)"],
+        ["인원", "미입력"],
+        ["소재지", "미입력"],
+        ["보유 인증", "미입력 (HACCP·ISO·벤처·이노비즈 확인 필요)"],
+        ["수출 실적", "미입력"],
+        ["자금 needs", "미입력 — 비융자 우선 전략 적용"],
     ]
-    prof = Table(prof_data, colWidths=[28*mm, 62*mm, 28*mm, 62*mm])
-    prof.setStyle(TableStyle([
-        ("FONTNAME", (0, 0), (-1, -1), KR_FONT_NAME),
-        ("FONTSIZE", (0, 0), (-1, -1), 9.5),
+    t = Table(profile_data, colWidths=[40 * mm, 130 * mm])
+    t.setStyle(TableStyle([
+        ("FONTNAME", (0, 0), (-1, -1), "KR"),
+        ("FONTSIZE", (0, 0), (-1, -1), 10),
         ("BACKGROUND", (0, 0), (0, -1), NAVY),
-        ("BACKGROUND", (2, 0), (2, -1), NAVY),
         ("TEXTCOLOR", (0, 0), (0, -1), colors.white),
-        ("TEXTCOLOR", (2, 0), (2, -1), colors.white),
-        ("BACKGROUND", (1, 0), (1, -1), LIGHT_GRAY),
-        ("BACKGROUND", (3, 0), (3, -1), LIGHT_GRAY),
+        ("BACKGROUND", (1, 0), (1, -1), LIGHT_BG),
+        ("BOX", (0, 0), (-1, -1), 0.8, NAVY),
+        ("INNERGRID", (0, 0), (-1, -1), 0.3, LIGHTGRAY),
         ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
         ("LEFTPADDING", (0, 0), (-1, -1), 8),
-        ("RIGHTPADDING", (0, 0), (-1, -1), 8),
-        ("TOPPADDING", (0, 0), (-1, -1), 7),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 7),
-        ("GRID", (0, 0), (-1, -1), 0.4, colors.white),
-        ("SPAN", (1, 3), (3, 3)),
+        ("TOPPADDING", (0, 0), (-1, -1), 5),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
     ]))
-    story.append(prof)
-    story.append(Spacer(1, 6*mm))
+    story.append(t)
+    story.append(Spacer(1, 8 * mm))
 
-    # 미입력 항목 경고
-    warn = Table([[Paragraph(
-        "<b>주의 — 미입력 항목</b>  매출·임직원 수·업력·정확한 제품군·보유 인증·자금 needs 등 "
-        "핵심 정보가 미입력 상태입니다. 본 리포트는 업계 평균 가설로 작성되었으며, "
-        "실제 컨설팅에서는 인터뷰 후 정밀 매칭 버전으로 갱신됩니다.",
-        BODY)]], colWidths=[180*mm])
-    warn.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#FFF4E5")),
-        ("BOX", (0, 0), (-1, -1), 0.6, ORANGE),
-        ("LEFTPADDING", (0, 0), (-1, -1), 10),
-        ("RIGHTPADDING", (0, 0), (-1, -1), 10),
-        ("TOPPADDING", (0, 0), (-1, -1), 8),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
-    ]))
-    story.append(warn)
-    story.append(Spacer(1, 6*mm))
-
-    # 강점·기회·리스크
-    strength = Table([
-        [Paragraph("<b>강점 (추정)</b>", H3),
-         Paragraph("<b>기회</b>", H3),
-         Paragraph("<b>리스크</b>", H3)],
-        [Paragraph("· HACCP 의무 운영 경험<br/>· 식육 가공 전문성<br/>· 우선지원대상 가능성", BODY),
-         Paragraph("· 식품 특화 스마트공장<br/>· 농기평 고부가 R&D<br/>· K-Food 수출 확대", BODY),
-         Paragraph("· R&D 사업계획서 부담<br/>· 자체부담금 25~50%<br/>· 중복지원 제한 점검", BODY)],
-    ], colWidths=[60*mm, 60*mm, 60*mm])
-    strength.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, 0), LIGHT_BLUE),
-        ("BOX", (0, 0), (-1, -1), 0.5, BLUE),
-        ("INNERGRID", (0, 0), (-1, -1), 0.3, colors.white),
-        ("VALIGN", (0, 0), (-1, -1), "TOP"),
-        ("LEFTPADDING", (0, 0), (-1, -1), 8),
-        ("RIGHTPADDING", (0, 0), (-1, -1), 8),
-        ("TOPPADDING", (0, 0), (-1, -1), 6),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
-    ]))
-    story.append(strength)
-    story.append(PageBreak())
-
-    # ====================================================================
-    # 03. 카테고리 맵
-    # ====================================================================
-    story.append(Paragraph("03. 육가공업 정부지원사업 카테고리 맵", H1))
-    story.append(HRFlowable(width="100%", thickness=2, color=BLUE, spaceAfter=10))
-    story.append(Paragraph(
-        "식육가공업(C10120 추정)에 적용 가능한 정부지원사업을 5개 영역으로 정리합니다. "
-        "각 영역의 주관기관·핵심 사업·전략 포인트를 한눈에 파악하실 수 있습니다.", BODY))
-    story.append(Spacer(1, 4*mm))
-
-    map_rows = [["코드", "영역", "주관기관·핵심 사업", "전략 포인트"]]
-    for c in CATEGORY_MAP:
-        map_rows.append([
-            c["code"],
-            Paragraph(f'<b>{c["title"]}</b>', BODY),
-            Paragraph(c["items"], BODY),
-            Paragraph(c["note"], BODY),
-        ])
-    cat_tbl = Table(map_rows, colWidths=[12*mm, 38*mm, 80*mm, 50*mm])
-    style = [
-        ("FONTNAME", (0, 0), (-1, -1), KR_FONT_NAME),
-        ("FONTSIZE", (0, 0), (-1, 0), 10),
-        ("FONTSIZE", (0, 1), (-1, -1), 9),
-        ("BACKGROUND", (0, 0), (-1, 0), NAVY),
-        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-        ("ALIGN", (0, 0), (-1, 0), "CENTER"),
-        ("ALIGN", (0, 1), (0, -1), "CENTER"),
-        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-        ("GRID", (0, 0), (-1, -1), 0.3, colors.HexColor("#BFBFBF")),
-        ("LEFTPADDING", (0, 0), (-1, -1), 6),
-        ("RIGHTPADDING", (0, 0), (-1, -1), 6),
-        ("TOPPADDING", (0, 0), (-1, -1), 8),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+    story.append(Paragraph("매칭 5영역 카테고리 맵", style_h2))
+    cat_data = [
+        ["A. 정책자금·운영자금", "중진공 융자, 기보·신보 보증", "③ ⑤ ⑥"],
+        ["B. R&D·기술개발", "ipet 농림식품 R&D (1~3월 마감)", "비수기"],
+        ["C. 수출·해외진출", "aT 현지화지원, 통합한국관, 수출바우처", "① ②"],
+        ["D. 인증·HACCP·안전", "식품진흥원 식품기업 인증 지원사업", "④"],
+        ["E. 스마트공장·시설", "부처협업형 스마트공장 (4월 종료)", "비수기"],
     ]
-    # 코드 셀에 카테고리 컬러
-    for i, c in enumerate(CATEGORY_MAP, 1):
-        style.append(("BACKGROUND", (0, i), (0, i), colors.HexColor(c["color"])))
-        style.append(("TEXTCOLOR", (0, i), (0, i), colors.white))
-        style.append(("FONTSIZE", (0, i), (0, i), 12))
-    cat_tbl.setStyle(TableStyle(style))
-    story.append(cat_tbl)
-    story.append(Spacer(1, 4*mm))
-    story.append(Paragraph(
-        "주: A 영역(융자·보증)은 자금 에이전트로 별도 이관, "
-        "본 리포트의 메인은 B~E 영역의 비융자 보조금·인증·시설 지원입니다.", SMALL))
+    t2 = Table(cat_data, colWidths=[55 * mm, 80 * mm, 35 * mm])
+    t2.setStyle(TableStyle([
+        ("FONTNAME", (0, 0), (-1, -1), "KR"),
+        ("FONTSIZE", (0, 0), (-1, -1), 9),
+        ("BACKGROUND", (0, 0), (0, -1), BLUE),
+        ("TEXTCOLOR", (0, 0), (0, -1), colors.white),
+        ("BACKGROUND", (2, 0), (2, -1), LIGHT_BG),
+        ("ALIGN", (2, 0), (2, -1), "CENTER"),
+        ("BOX", (0, 0), (-1, -1), 0.8, NAVY),
+        ("INNERGRID", (0, 0), (-1, -1), 0.3, LIGHTGRAY),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ("LEFTPADDING", (0, 0), (-1, -1), 6),
+        ("TOPPADDING", (0, 0), (-1, -1), 4),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+    ]))
+    story.append(t2)
     story.append(PageBreak())
 
-    # ====================================================================
-    # 04. 매칭 공고 종합표
-    # ====================================================================
-    story.append(Paragraph("04. 추천 매칭 공고 7개", H1))
-    story.append(HRFlowable(width="100%", thickness=2, color=BLUE, spaceAfter=10))
 
-    header = ["#", "공고명", "출처", "지원 규모", "마감(추정)", "적합도"]
+def build_matching_table(story):
+    story.append(Paragraph("매칭 현황표 (전체 6공고)", style_h1))
+    story.append(Spacer(1, 3 * mm))
+    story.append(Paragraph(
+        "신청기간(D-day) 컬럼 포함. 모든 공고 마감일 ≥ 2026-05-07.",
+        style_small))
+    story.append(Spacer(1, 5 * mm))
+
+    header = ["No", "공고명", "기관", "신청기간 (D-day)", "지원규모", "적합도"]
     rows = [header]
     for a in ANNOUNCEMENTS:
         rows.append([
             a["no"],
-            Paragraph(a["title"], ParagraphStyle("p", fontName=KR_FONT_NAME, fontSize=8.5, leading=11)),
-            Paragraph(a["source"], ParagraphStyle("p", fontName=KR_FONT_NAME, fontSize=8, leading=10)),
-            Paragraph(a["budget"], ParagraphStyle("p", fontName=KR_FONT_NAME, fontSize=8.5, leading=11)),
-            Paragraph(a["deadline"], ParagraphStyle("p", fontName=KR_FONT_NAME, fontSize=8.5, leading=11)),
+            a["title"][:30],
+            a["agency"],
+            f"{a['period']}\n[{a['dday']}]",
+            a["amount"],
             a["fit"],
         ])
-    tbl = Table(rows, colWidths=[8*mm, 50*mm, 35*mm, 38*mm, 31*mm, 14*mm])
-    style = [
-        ("FONTNAME", (0, 0), (-1, -1), KR_FONT_NAME),
-        ("FONTSIZE", (0, 0), (-1, 0), 9.5),
-        ("FONTSIZE", (0, 1), (-1, -1), 8.5),
+
+    t = Table(rows, colWidths=[10 * mm, 55 * mm, 25 * mm, 42 * mm, 28 * mm, 22 * mm],
+              repeatRows=1)
+    t.setStyle(TableStyle([
+        ("FONTNAME", (0, 0), (-1, -1), "KR"),
+        ("FONTSIZE", (0, 0), (-1, 0), 9),
+        ("FONTSIZE", (0, 1), (-1, -1), 8),
         ("BACKGROUND", (0, 0), (-1, 0), NAVY),
         ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
         ("ALIGN", (0, 0), (-1, 0), "CENTER"),
         ("ALIGN", (0, 1), (0, -1), "CENTER"),
-        ("ALIGN", (-1, 1), (-1, -1), "CENTER"),
+        ("ALIGN", (5, 1), (5, -1), "CENTER"),
         ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-        ("GRID", (0, 0), (-1, -1), 0.3, colors.HexColor("#BFBFBF")),
-        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, LIGHT_GRAY]),
-        ("LEFTPADDING", (0, 0), (-1, -1), 5),
-        ("RIGHTPADDING", (0, 0), (-1, -1), 5),
-        ("TOPPADDING", (0, 0), (-1, -1), 6),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
-    ]
-    for i, a in enumerate(ANNOUNCEMENTS, 1):
-        style.append(("BACKGROUND", (-1, i), (-1, i), fit_color[a["fit"]]))
-        style.append(("TEXTCOLOR", (-1, i), (-1, i), colors.white))
-        style.append(("FONTSIZE", (-1, i), (-1, i), 10))
-    tbl.setStyle(TableStyle(style))
-    story.append(tbl)
-    story.append(Spacer(1, 4*mm))
-    story.append(Paragraph(
-        "주: 모든 금액·일정은 작년 기준 추정. ⑦번 정책자금 융자는 자금 에이전트 이관 권고. "
-        "예상 수혜 금액은 평균 선정 규모 기준 보수적 추정치.", SMALL))
-    story.append(Spacer(1, 5*mm))
-
-    # 공고 요약 카드 (4~7번)
-    story.append(Paragraph("공고별 요약 메모", H3))
-    for a in ANNOUNCEMENTS:
-        memo = Table([[Paragraph(
-            f'<b>{a["no"]} {a["title"]}</b>  ({a["category"]})  <font color="#595959">— {a["source"]}</font><br/>'
-            f'{a["summary"]}',
-            BODY)]], colWidths=[180*mm])
-        memo.setStyle(TableStyle([
-            ("BACKGROUND", (0, 0), (-1, -1), LIGHT_GRAY),
-            ("BOX", (0, 0), (-1, -1), 0.3, GRAY),
-            ("LEFTPADDING", (0, 0), (-1, -1), 8),
-            ("RIGHTPADDING", (0, 0), (-1, -1), 8),
-            ("TOPPADDING", (0, 0), (-1, -1), 5),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+        ("BOX", (0, 0), (-1, -1), 0.8, NAVY),
+        ("INNERGRID", (0, 0), (-1, -1), 0.3, LIGHTGRAY),
+        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, LIGHT_BG]),
+        ("LEFTPADDING", (0, 0), (-1, -1), 4),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 4),
+        ("TOPPADDING", (0, 0), (-1, -1), 4),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+    ]))
+    for i, a in enumerate(ANNOUNCEMENTS, start=1):
+        t.setStyle(TableStyle([
+            ("TEXTCOLOR", (3, i), (3, i), a["dday_color"]),
+            ("FONTNAME", (3, i), (3, i), "KR"),
         ]))
-        story.append(memo)
-        story.append(Spacer(1, 2*mm))
+    story.append(t)
+    story.append(Spacer(1, 6 * mm))
+
+    # 공고 진입 링크 (전체)
+    story.append(Paragraph("공고 진입 링크 (개별 공고 상세 URL)", style_h2))
+    for a in ANNOUNCEMENTS:
+        story.append(Paragraph(
+            f'{a["no"]} <link href="{a["url"]}" color="#2E75B6"><u>{a["url"]}</u></link>',
+            style_link))
+        story.append(Spacer(1, 1 * mm))
     story.append(PageBreak())
 
-    # ====================================================================
-    # 05. 우선순위 매트릭스
-    # ====================================================================
-    story.append(Paragraph("05. 우선순위 매트릭스", H1))
-    story.append(HRFlowable(width="100%", thickness=2, color=BLUE, spaceAfter=10))
+
+def build_matrix_chart(story):
+    story.append(Paragraph("우선순위 매트릭스", style_h1))
+    story.append(Spacer(1, 3 * mm))
     story.append(Paragraph(
-        "X축은 신청 난이도, Y축은 기대 효과, 버블 크기는 지원 규모를 의미합니다. "
-        "<b>우상단(전략과제)</b>의 고부가 R&D는 사업계획서 부담이 크지만 임팩트가 가장 큽니다. "
-        "<b>중상단(Quick Win)</b>의 스마트공장·HACCP 고도화를 먼저 잡고 그 데이터를 R&D로 연결하는 "
-        "포트폴리오가 효율적입니다.", BODY))
-    story.append(Spacer(1, 4*mm))
-    story.append(RLImage(make_priority_matrix(), width=180*mm, height=110*mm))
+        "X축: 신청 난이도 / Y축: 기대 효과 / 버블 크기: 지원 규모 / 색: D-day (초록=여유, 주황=상시, 빨강=긴급)",
+        style_small))
+    story.append(Spacer(1, 4 * mm))
+
+    chart = make_priority_matrix()
+    story.append(RLImage(chart, width=170 * mm, height=100 * mm))
+    story.append(Spacer(1, 5 * mm))
+
+    story.append(Paragraph("해석", style_h2))
+    story.append(Paragraph(
+        "공고 ① · ② (우상단)는 Quick Win 영역으로 즉시 신청 권고. "
+        "공고 ③ (큰 빨간 버블)은 Strategic Bet — 5/8 1차 마감 임박. "
+        "공고 ④는 가장 쉬운 진입로. ⑤ · ⑥은 자금 보완책.",
+        style_body))
     story.append(PageBreak())
 
-    # ====================================================================
-    # 06. 신청 타임라인
-    # ====================================================================
-    story.append(Paragraph("06. 신청 타임라인", H1))
-    story.append(HRFlowable(width="100%", thickness=2, color=BLUE, spaceAfter=10))
-    story.append(Paragraph(
-        "오늘(2026-05-07) 기준 각 공고의 준비~마감 추정 구간을 시각화했습니다. "
-        "<b>HACCP 고도화·스마트공장은 즉시 착수</b>가 가능하며, "
-        "<b>고부가 R&D는 10일 후부터 60일간 집중 준비</b>해야 마감 대응이 가능합니다.", BODY))
-    story.append(Spacer(1, 4*mm))
-    story.append(RLImage(make_timeline(), width=180*mm, height=100*mm))
-    story.append(Spacer(1, 4*mm))
-    story.append(Paragraph("※ 일정은 작년 공고 패턴 기반 추정. 실제 공고 확정 시 재배치 필요.", SMALL))
-    story.append(PageBreak())
 
-    # ====================================================================
-    # 07. 시너지 패키지 전략
-    # ====================================================================
-    story.append(Paragraph("07. 육가공업 특화 시너지 전략", H1))
-    story.append(HRFlowable(width="100%", thickness=2, color=BLUE, spaceAfter=10))
+def build_timeline_chart(story):
+    story.append(Paragraph("신청 타임라인 (2026-05-07 기준)", style_h1))
+    story.append(Spacer(1, 3 * mm))
     story.append(Paragraph(
-        "공고를 따로따로 신청하지 않고 <b>3개 패키지</b>로 묶어서 연쇄 효과를 만드는 것이 핵심입니다.",
-        BODY))
-    story.append(Spacer(1, 4*mm))
+        "빨간 점선이 오늘. 공고별 신청 가능 윈도우.",
+        style_small))
+    story.append(Spacer(1, 4 * mm))
 
-    # 패키지 A
-    pa_data = [
-        ["패키지 A", "시설 현대화 패키지 (3단계 연쇄)"],
-        ["1단계", "HACCP 고도화·스마트HACCP 컨설팅 (식품안전관리인증원)"],
-        ["2단계", "식품 특화 스마트공장 보급 (중기부·식약처)"],
-        ["3단계", "고부가가치식품 R&D — 데이터 기반 신제품 (농기평)"],
-        ["누적 수혜", "보조금 합산 약 3~7억원 + 정책자금 가점·세제혜택 (보수적 추정)"],
+    chart = make_timeline()
+    story.append(RLImage(chart, width=170 * mm, height=80 * mm))
+    story.append(Spacer(1, 5 * mm))
+
+    story.append(Paragraph("타이밍 전략", style_h2))
+    timeline_strategy = [
+        ["순서", "공고", "신청 시점", "준비 일정"],
+        ["1", "③ 중진공 1차", "5/7~5/8 (즉시)", "재무제표·사업계획서 24시간 내 준비"],
+        ["2", "④ 식품진흥원 인증", "5/9~5/15", "현재 보유 인증 점검 → 신규 인증 선정"],
+        ["3", "① 현지화 자문", "6월 초", "수출국 1순위 결정 + 바이어 컨택 증빙"],
+        ["4", "② 수입등록·검사", "8~9월", "①의 자문 결과 기반으로 신청"],
+        ["5", "⑤ 신보 / ⑥ 기보", "③ 미선정 시 백업", "필요시 즉시"],
     ]
-    pa = Table(pa_data, colWidths=[26*mm, 154*mm])
-    pa.setStyle(TableStyle([
-        ("FONTNAME", (0, 0), (-1, -1), KR_FONT_NAME),
-        ("FONTSIZE", (0, 0), (-1, -1), 10),
+    t = Table(timeline_strategy, colWidths=[12 * mm, 55 * mm, 35 * mm, 68 * mm])
+    t.setStyle(TableStyle([
+        ("FONTNAME", (0, 0), (-1, -1), "KR"),
+        ("FONTSIZE", (0, 0), (-1, -1), 9),
         ("BACKGROUND", (0, 0), (-1, 0), NAVY),
         ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-        ("FONTSIZE", (0, 0), (-1, 0), 11),
-        ("BACKGROUND", (0, 1), (0, -1), LIGHT_BLUE),
-        ("BACKGROUND", (0, -1), (-1, -1), colors.HexColor("#FFF4E5")),
-        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
         ("ALIGN", (0, 0), (0, -1), "CENTER"),
-        ("GRID", (0, 0), (-1, -1), 0.3, colors.HexColor("#BFBFBF")),
-        ("LEFTPADDING", (0, 0), (-1, -1), 8),
-        ("RIGHTPADDING", (0, 0), (-1, -1), 8),
-        ("TOPPADDING", (0, 0), (-1, -1), 7),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 7),
-    ]))
-    story.append(pa)
-    story.append(Spacer(1, 5*mm))
-
-    # 패키지 B
-    pb_data = [
-        ["패키지 B", "수출 확장 패키지"],
-        ["1단계", "HACCP + ISO22000 / FSSC22000 국제 인증 취득"],
-        ["2단계", "aT 수출 + 코트라·중기부 수출바우처 (중복 가능 여부 확인)"],
-        ["3단계", "K-Food 박람회·해외 안테나숍 입점 → B2B 거래 확보"],
-        ["기대 효과", "내수 의존도 축소, 매출 다각화, 18~24개월 단위 로드맵"],
-    ]
-    pb = Table(pb_data, colWidths=[26*mm, 154*mm])
-    pb.setStyle(TableStyle([
-        ("FONTNAME", (0, 0), (-1, -1), KR_FONT_NAME),
-        ("FONTSIZE", (0, 0), (-1, -1), 10),
-        ("BACKGROUND", (0, 0), (-1, 0), GREEN),
-        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-        ("FONTSIZE", (0, 0), (-1, 0), 11),
-        ("BACKGROUND", (0, 1), (0, -1), colors.HexColor("#E2F0DC")),
-        ("BACKGROUND", (0, -1), (-1, -1), colors.HexColor("#FFF4E5")),
         ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-        ("ALIGN", (0, 0), (0, -1), "CENTER"),
-        ("GRID", (0, 0), (-1, -1), 0.3, colors.HexColor("#BFBFBF")),
-        ("LEFTPADDING", (0, 0), (-1, -1), 8),
-        ("RIGHTPADDING", (0, 0), (-1, -1), 8),
-        ("TOPPADDING", (0, 0), (-1, -1), 7),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 7),
+        ("BOX", (0, 0), (-1, -1), 0.8, NAVY),
+        ("INNERGRID", (0, 0), (-1, -1), 0.3, LIGHTGRAY),
+        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, LIGHT_BG]),
+        ("LEFTPADDING", (0, 0), (-1, -1), 5),
+        ("TOPPADDING", (0, 0), (-1, -1), 4),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
     ]))
-    story.append(pb)
-    story.append(Spacer(1, 5*mm))
-
-    # 패키지 C
-    pc_data = [
-        ["패키지 C", "인증 포트폴리오로 ROI 극대화"],
-        ["기반", "HACCP (이미 보유 가정)"],
-        ["추가", "이노비즈 → 벤처기업 확인 → 기업부설연구소 설립"],
-        ["시너지", "정책자금 가점 / 세액공제 50% / 보증료 0.5%p 우대 / 인력 채용 우대"],
-        ["기대 효과", "직접 자금 X, 다른 모든 공고의 ROI를 1.3~1.5배 증대"],
-    ]
-    pc = Table(pc_data, colWidths=[26*mm, 154*mm])
-    pc.setStyle(TableStyle([
-        ("FONTNAME", (0, 0), (-1, -1), KR_FONT_NAME),
-        ("FONTSIZE", (0, 0), (-1, -1), 10),
-        ("BACKGROUND", (0, 0), (-1, 0), ORANGE),
-        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-        ("FONTSIZE", (0, 0), (-1, 0), 11),
-        ("BACKGROUND", (0, 1), (0, -1), colors.HexColor("#FCE7CC")),
-        ("BACKGROUND", (0, -1), (-1, -1), colors.HexColor("#FFF4E5")),
-        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-        ("ALIGN", (0, 0), (0, -1), "CENTER"),
-        ("GRID", (0, 0), (-1, -1), 0.3, colors.HexColor("#BFBFBF")),
-        ("LEFTPADDING", (0, 0), (-1, -1), 8),
-        ("RIGHTPADDING", (0, 0), (-1, -1), 8),
-        ("TOPPADDING", (0, 0), (-1, -1), 7),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 7),
-    ]))
-    story.append(pc)
+    story.append(t)
     story.append(PageBreak())
 
-    # ====================================================================
-    # 08. 추가 정보 요청 + 다음 액션
-    # ====================================================================
-    story.append(Paragraph("08. 추가 확인 필요 정보 — 사용자 답변 요청", H1))
-    story.append(HRFlowable(width="100%", thickness=2, color=BLUE, spaceAfter=10))
+
+def build_proposal_draft(story):
+    story.append(Paragraph("제안서 초안 — 1순위: 농식품 현지화지원사업", style_h1))
+    story.append(Spacer(1, 3 * mm))
     story.append(Paragraph(
-        "본 리포트의 정밀도를 60% → 90%로 끌어올리기 위해 다음 정보가 필요합니다.", BODY))
-    story.append(Spacer(1, 3*mm))
+        "공고 ① + ② 묶음 신청 가정. 미래스타푸드 정보 미확보분은 [입력필요] 표기.",
+        style_small))
+    story.append(Spacer(1, 6 * mm))
 
-    info_rows = [
-        ["#", "확인 필요 항목", "영향"],
-        ["1", "매출 규모 (최근 3개년)·임직원 수·업력",
-         "정책자금 한도, 창업기업 R&D 트랙 분기, 우선지원 대상 확정"],
-        ["2", "주력 제품군과 주요 거래처 (B2B/B2C)",
-         "수출·R&D·신제품 매칭의 정밀도 결정"],
-        ["3", "보유 인증 현황 (HACCP·ISO22000·할랄·벤처·이노비즈 등)",
-         "인증 패키지 진입 단계 결정"],
-        ["4", "자금 needs 우선순위 (시설 / 운영 / R&D / 수출 / 인증)",
-         "7개 공고의 1~3순위 재배치"],
-        ["5", "신청 목표 시점 (3개월 / 6개월 / 1년 계획)",
-         "마감 임박 vs 상시 공고 우선순위 결정"],
-        ["6 (선택)", "기존 정부지원 이력",
-         "동일 사업 중복 지원 제한 점검"],
-        ["7 (선택)", "소재지 (시·도 단위)",
-         "지자체 공고 추가 매칭"],
+    story.append(Paragraph("1. 사업 참여 필요성", style_h2))
+    story.append(Paragraph(
+        "(주)미래스타푸드는 KSIC C10120 식육가공업으로 추정되는 육가공 제조 기업으로, "
+        "햄·소시지·분쇄가공육 등의 K-푸드 수출 잠재력을 보유하고 있다. "
+        "그러나 수출 첫 진입 단계에서 발생하는 ▲수출국 식품 라벨링 규정 ▲동물성 식품 수입등록(중국 GACC, 미국 FSIS) "
+        "▲할랄·할랄 동등성 인증 ▲현지 미생물·이화학 검사 비용은 중소 육가공기업 단독 부담이 어려운 수준이다. "
+        "본 사업의 자문·등록·검사 지원금은 이 진입 장벽을 직접 낮추는 가장 효율적 수단이다.",
+        style_body))
+    story.append(Spacer(1, 4 * mm))
+
+    story.append(Paragraph("2. 사업 추진 계획", style_h2))
+    plan = [
+        ["단계", "주요 내용", "기간", "예상 성과"],
+        ["1", "수출 1순위 국가 결정 + 바이어 컨택 증빙", "2026.06", "수출 계획서 v1"],
+        ["2", "현지 전문기관 자문 (라벨·식품법규)", "2026.06~08", "현지 적합 라벨 디자인"],
+        ["3", "현지 수입등록 신청 (FDA/GACC)", "2026.08~11", "수입등록 완료"],
+        ["4", "현지 미생물·이화학 검사", "2026.10~12", "수출 적합성 확보"],
+        ["5", "첫 수출 PO 확보", "2026.12~", "수출 실적 발생"],
     ]
-    info_tbl = Table(info_rows, colWidths=[18*mm, 76*mm, 86*mm])
-    info_tbl.setStyle(TableStyle([
-        ("FONTNAME", (0, 0), (-1, -1), KR_FONT_NAME),
-        ("FONTSIZE", (0, 0), (-1, -1), 9.5),
+    t = Table(plan, colWidths=[12 * mm, 65 * mm, 28 * mm, 65 * mm])
+    t.setStyle(TableStyle([
+        ("FONTNAME", (0, 0), (-1, -1), "KR"),
+        ("FONTSIZE", (0, 0), (-1, -1), 9),
         ("BACKGROUND", (0, 0), (-1, 0), NAVY),
         ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-        ("ALIGN", (0, 0), (-1, 0), "CENTER"),
-        ("ALIGN", (0, 1), (0, -1), "CENTER"),
+        ("ALIGN", (0, 0), (0, -1), "CENTER"),
+        ("ALIGN", (2, 0), (2, -1), "CENTER"),
         ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-        ("GRID", (0, 0), (-1, -1), 0.3, colors.HexColor("#BFBFBF")),
-        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, LIGHT_GRAY]),
-        ("LEFTPADDING", (0, 0), (-1, -1), 7),
-        ("RIGHTPADDING", (0, 0), (-1, -1), 7),
-        ("TOPPADDING", (0, 0), (-1, -1), 8),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+        ("BOX", (0, 0), (-1, -1), 0.8, NAVY),
+        ("INNERGRID", (0, 0), (-1, -1), 0.3, LIGHTGRAY),
+        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, LIGHT_BG]),
+        ("LEFTPADDING", (0, 0), (-1, -1), 5),
+        ("TOPPADDING", (0, 0), (-1, -1), 4),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
     ]))
-    story.append(info_tbl)
-    story.append(Spacer(1, 8*mm))
+    story.append(t)
+    story.append(Spacer(1, 5 * mm))
 
-    # 다음 액션
-    story.append(Paragraph("다음 액션 — 5단계 즉시 실행 플랜", H2))
-    action = Table([
-        ["기간", "Action", "담당"],
-        ["즉시", "위 5가지 정보 회신 → 정밀 매칭 버전으로 업데이트", "대표·실무"],
-        ["1주 내", "농기평 ATIS / smart-factory.kr / haccp.or.kr 공고 모니터링 등록", "대표·기획"],
-        ["2주 내", "HACCP 고도화 사전 진단 신청 (가장 진입장벽 낮음)", "품질팀"],
-        ["1개월 내", "사업계획서 컨설팅 착수 (스마트공장 또는 R&D 1순위 선택)", "대표 + 컨설팅"],
-        ["3개월 내", "이노비즈·벤처 자가진단 → 미달 영역 보완 계획 수립", "대표 + 컨설팅"],
-    ], colWidths=[26*mm, 110*mm, 34*mm])
-    action.setStyle(TableStyle([
-        ("FONTNAME", (0, 0), (-1, -1), KR_FONT_NAME),
-        ("FONTSIZE", (0, 0), (-1, -1), 9.5),
-        ("BACKGROUND", (0, 0), (-1, 0), NAVY),
+    story.append(Paragraph("3. 기대 효과 및 성과 지표", style_h2))
+    story.append(Paragraph(
+        "<b>정량 지표</b><br/>"
+        "• 수출 첫 PO 1건 이상 (사업 종료 시점)<br/>"
+        "• 정부 지원 수령액 5,000만 원 ~ 1억 원 (① + ② 합산)<br/>"
+        "• 수출 인증 1건 이상 신규 취득 (HACCP 동등성·할랄 등)<br/>"
+        "<br/><b>정성 지표</b><br/>"
+        "• 수출국 식품법규 대응 역량 내재화<br/>"
+        "• 현지 바이어 네트워크 1개 이상 확보<br/>"
+        "• 후속 지원사업(수출바우처 3차·통합한국관 하반기) 진입 트랙 확보",
+        style_body))
+    story.append(Spacer(1, 5 * mm))
+
+    story.append(Paragraph("4. 사업 지속 계획", style_h2))
+    story.append(Paragraph(
+        "지원금 종료 후에도 자체 수출 인프라를 유지하기 위해 ▲전담 수출 담당자 1인 배치 "
+        "▲공고 ④ 식품진흥원 인증 지원사업으로 인증 갱신 비용 절감 "
+        "▲중진공 ③·KIBO ⑥ 기술평가보증을 활용한 수출 운전자금 확보 "
+        "▲2027년 농식품글로벌성장패키지(공모형) 진입 등 후속 단계로 이어간다.",
+        style_body))
+    story.append(PageBreak())
+
+
+def build_appendix(story):
+    story.append(Paragraph("부록 1 — 추가 확인 필요 정보 5가지", style_h1))
+    story.append(Spacer(1, 3 * mm))
+    info_data = [
+        ["1", "연 매출액 / 직전 3년 추이", "중진공·신보·기보 한도 산정 핵심"],
+        ["2", "현재 보유 인증", "HACCP·ISO·벤처·이노비즈 - 가점 반영"],
+        ["3", "수출 실적·계획", "①·② 신청 적격성 직결"],
+        ["4", "자금 needs 우선순위", "시설 / 운영 / 수출 / R&D 중 선택"],
+        ["5", "임직원 수·R&D 인력·기업부설연구소", "기보 등급 우대 + R&D 진입 트랙"],
+    ]
+    t = Table(info_data, colWidths=[10 * mm, 65 * mm, 95 * mm])
+    t.setStyle(TableStyle([
+        ("FONTNAME", (0, 0), (-1, -1), "KR"),
+        ("FONTSIZE", (0, 0), (-1, -1), 9),
+        ("BACKGROUND", (0, 0), (0, -1), NAVY),
+        ("TEXTCOLOR", (0, 0), (0, -1), colors.white),
+        ("ALIGN", (0, 0), (0, -1), "CENTER"),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ("BOX", (0, 0), (-1, -1), 0.8, NAVY),
+        ("INNERGRID", (0, 0), (-1, -1), 0.3, LIGHTGRAY),
+        ("ROWBACKGROUNDS", (0, 0), (-1, -1), [colors.white, LIGHT_BG]),
+        ("LEFTPADDING", (0, 0), (-1, -1), 5),
+        ("TOPPADDING", (0, 0), (-1, -1), 5),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+    ]))
+    story.append(t)
+    story.append(Spacer(1, 8 * mm))
+
+    story.append(Paragraph("부록 2 — 검증·제외 공고 (빡빡이 트레이서빌리티)", style_h1))
+    story.append(Spacer(1, 3 * mm))
+    excluded = [
+        ["고부가가치식품기술개발사업", "2026-02-09", "마감 경과"],
+        ["농식품글로벌성장패키지(신청형)", "2026-02-06", "마감 경과"],
+        ["농식품 벤처육성 지원사업(창업)", "2026-02-23", "마감 + 업력 5년 초과 가능"],
+        ["식품기능성평가지원 사업", "2026-01-16", "마감 경과"],
+        ["밀착형 기술사업화 지원사업", "2026-03-20", "마감 + 기술이전 전제"],
+        ["국가식품클러스터 통합마케팅", "2026-03-30", "마감 + 클러스터 입주기업 우대"],
+        ["글로벌 NEXT K-푸드", "2026-03-03", "마감 경과"],
+        ["수출지원기반활용사업 2차(중기부)", "2026-05-06", "오늘 5/7 기준 1일 경과"],
+        ["글로벌 K-푸드 페어 상반기", "2025-12-19", "마감 경과"],
+        ["부처협업형 스마트공장", "2026-04-09", "마감 경과"],
+    ]
+    t2 = Table([["공고명", "마감일", "제외 사유"]] + excluded,
+               colWidths=[75 * mm, 30 * mm, 65 * mm])
+    t2.setStyle(TableStyle([
+        ("FONTNAME", (0, 0), (-1, -1), "KR"),
+        ("FONTSIZE", (0, 0), (-1, -1), 9),
+        ("BACKGROUND", (0, 0), (-1, 0), GRAY),
         ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-        ("ALIGN", (0, 0), (-1, 0), "CENTER"),
-        ("ALIGN", (0, 1), (0, -1), "CENTER"),
-        ("ALIGN", (2, 1), (2, -1), "CENTER"),
+        ("ALIGN", (1, 0), (1, -1), "CENTER"),
         ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-        ("GRID", (0, 0), (-1, -1), 0.3, colors.HexColor("#BFBFBF")),
-        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, LIGHT_GRAY]),
-        ("LEFTPADDING", (0, 0), (-1, -1), 7),
-        ("RIGHTPADDING", (0, 0), (-1, -1), 7),
-        ("TOPPADDING", (0, 0), (-1, -1), 7),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 7),
+        ("BOX", (0, 0), (-1, -1), 0.8, GRAY),
+        ("INNERGRID", (0, 0), (-1, -1), 0.3, LIGHTGRAY),
+        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, LIGHT_BG]),
+        ("LEFTPADDING", (0, 0), (-1, -1), 5),
+        ("TOPPADDING", (0, 0), (-1, -1), 4),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
     ]))
-    story.append(action)
-    story.append(Spacer(1, 12*mm))
+    story.append(t2)
+    story.append(Spacer(1, 8 * mm))
 
-    # 푸터 박스
-    footer = Table([
-        [Paragraph("<b>본 리포트는 히어컴퍼니 기업컨설팅이 제공합니다</b>", COVER_BR)],
-        [Paragraph("HereCompany Consulting · 정부지원사업 매칭 · 사업계획서 컨설팅 · 인증·정책자금 통합 솔루션", COVER_BR)],
-        [Spacer(1, 3*mm)],
-        [Paragraph(
-            f"발행일 {datetime.now().strftime('%Y-%m-%d')} · 본 자료는 공개 공고 기반 추정으로 "
-            f"실제 신청 전 공고문 원문을 반드시 확인하십시오.", COVER_BR)],
-    ], colWidths=[180*mm])
-    footer.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, -1), NAVY),
-        ("LEFTPADDING", (0, 0), (-1, -1), 10),
-        ("RIGHTPADDING", (0, 0), (-1, -1), 10),
-        ("TOPPADDING", (0, 0), (-1, -1), 10),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 10),
-    ]))
-    story.append(footer)
+    story.append(Paragraph(
+        "본 리포트의 모든 공고 마감일은 2026-05-07 오전 시점 실시간 크롤링 결과이며, "
+        "정부 사이트의 공고 변경·취소·예산 소진 발생 시 변동될 수 있다. "
+        "신청 직전 반드시 공고 진입 링크에서 최신 상태를 재확인할 것.",
+        style_small))
 
-    doc.build(story, onFirstPage=lambda c, d: None, onLaterPages=_on_page)
 
+# ============================================================
+# 7. 메인
+# ============================================================
 
 def main():
     out_dir = "/home/user/-/미래스타푸드"
     os.makedirs(out_dir, exist_ok=True)
-    # 사용자 지정 파일명: 20260504
-    pdf_path = os.path.join(out_dir, "(주)미래스타푸드_정부지원사업리포트_20260504.pdf")
-    build_pdf(pdf_path)
-    print(f"OK: {pdf_path}")
-    print(f"Size: {os.path.getsize(pdf_path)} bytes")
+    out_path = os.path.join(
+        out_dir,
+        "(주)미래스타푸드_정부지원사업리포트_20260507.pdf",
+    )
+
+    doc = SimpleDocTemplate(
+        out_path, pagesize=A4,
+        leftMargin=15 * mm, rightMargin=15 * mm,
+        topMargin=18 * mm, bottomMargin=14 * mm,
+        title="(주)미래스타푸드 정부지원사업 매칭 리포트",
+        author="히어컴퍼니 기업컨설팅 (HearCompany)",
+    )
+
+    story = []
+    build_cover(story)
+    build_summary_cards(story)
+    build_company_profile(story)
+    build_matching_table(story)
+    build_matrix_chart(story)
+    build_timeline_chart(story)
+    build_proposal_draft(story)
+    build_appendix(story)
+
+    doc.build(story, onFirstPage=lambda c, d: None, onLaterPages=header_footer)
+
+    size_kb = os.path.getsize(out_path) / 1024
+    print(f"[OK] PDF generated: {out_path}")
+    print(f"[OK] Size: {size_kb:.1f} KB")
+
+    try:
+        if sys.platform == "darwin":
+            subprocess.run(["open", out_path])
+        elif sys.platform == "win32":
+            os.startfile(out_path)
+    except Exception:
+        pass
+
+    return out_path
 
 
 if __name__ == "__main__":
