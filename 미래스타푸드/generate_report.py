@@ -759,7 +759,7 @@ def main():
     build_matrix_chart(story)
     build_timeline_chart(story)
     build_proposal_draft(story)
-    build_appendix(story)
+    # build_appendix(story)  # 부록 1·2 (추가 확인 정보 / 검증·제외 공고) 사용자 요청으로 제외 (2026-05-07)
 
     doc.build(story, onFirstPage=lambda c, d: None, onLaterPages=header_footer)
 
