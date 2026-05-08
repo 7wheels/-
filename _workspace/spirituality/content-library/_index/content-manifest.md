@@ -1,16 +1,36 @@
 # 콘텐츠 인벤토리
 
-> 발행: 2026-05-04 | 갱신: 회당 발행 시마다
-> **저장소에서 추적하지 않는 회당 콘텐츠가 어디에·어떻게 있는지 기록.**
+> 발행: 2026-05-04 | 갱신: 2026-05-08 (트랙 A·F 저장소 분리 완료)
+> 본 문서는 메인 저장소가 추적하는 메타급 산출물과, 별도 저장소로 이전된 회당 콘텐츠의 위치를 기록한다.
+
+---
+
+## 마이그레이션 완료 요약 (2026-05-08)
+
+| 트랙 | 메타 산출물 위치 | 회당 콘텐츠 저장소 |
+|------|----------------|----------------|
+| A 영혼몸 | 메인 저장소 (`wommack-track-A-spirit-soul-body/`) | https://github.com/7wheels/indwelling-track-A |
+| F 이미 가졌습니다 | 메인 저장소 (`wommack-track-F-already-got-it/`) | https://github.com/7wheels/indwelling-track-F |
+
+각 트랙의 `00_track-overview.md`·`theology-statement.md`·`red-team-review.md`·`SPLIT-NOTICE.md`는 메인 저장소에 유지. `weeks/` 12회당 풀세트는 별도 저장소.
 
 ---
 
 ## 트랙 A — 영혼몸 (Spirit, Soul & Body)
 
-**저장소 위치:** `content-library/wommack-track-A-spirit-soul-body/`
-**로컬 위치:** `~/Desktop/Indwelling/tracks/A-영혼몸/`
+**메타 산출물 위치:** `content-library/wommack-track-A-spirit-soul-body/`
+**회당 콘텐츠 저장소:** https://github.com/7wheels/indwelling-track-A
 
-### 발행 현황
+### 메타 산출물 (메인 저장소)
+
+| 산출물 | 상태 |
+|------|------|
+| 00_track-overview.md | ✅ |
+| theology-statement.md | ✅ |
+| red-team-review.md | ✅ |
+| SPLIT-NOTICE.md | ✅ |
+
+### 회당 진행 (별도 저장소에 12/12 ✅)
 
 | Week | 주제 | 발행일 | 산출물 | 위치 |
 |------|------|------|------|------|
@@ -45,9 +65,19 @@
 
 ## 트랙 F — 당신은 이미 가졌습니다 (You've Already Got It)
 
-**저장소 위치:** `content-library/wommack-track-F-already-got-it/`
-**골격:** ✅ 발행 (2026-05-04)
-**회당 진행:** 12 / 12 ✅ **완주**
+**메타 산출물 위치:** `content-library/wommack-track-F-already-got-it/`
+**회당 콘텐츠 저장소:** https://github.com/7wheels/indwelling-track-F
+
+### 메타 산출물 (메인 저장소)
+
+| 산출물 | 상태 |
+|------|------|
+| 00_track-overview.md | ✅ |
+| theology-statement.md | ✅ |
+| red-team-review.md | ✅ |
+| SPLIT-NOTICE.md | ✅ |
+
+### 회당 진행 (별도 저장소에 12/12 ✅)
 
 | Week | 주제 | 발행일 | 산출물 | 위치 |
 |------|------|------|------|------|
