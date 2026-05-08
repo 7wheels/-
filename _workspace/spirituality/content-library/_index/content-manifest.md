@@ -11,6 +11,7 @@
 |------|----------------|----------------|
 | A 영혼몸 | 메인 저장소 (`wommack-track-A-spirit-soul-body/`) | https://github.com/7wheels/indwelling-track-A |
 | F 이미 가졌습니다 | 메인 저장소 (`wommack-track-F-already-got-it/`) | https://github.com/7wheels/indwelling-track-F |
+| C 은혜와 믿음 | 메인 저장소 (`wommack-track-C-grace-and-faith/`) | https://github.com/7wheels/indwelling-track-C |
 
 각 트랙의 `00_track-overview.md`·`theology-statement.md`·`red-team-review.md`·`SPLIT-NOTICE.md`는 메인 저장소에 유지. `weeks/` 12회당 풀세트는 별도 저장소.
 
