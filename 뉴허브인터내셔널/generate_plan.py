@@ -596,7 +596,7 @@ def p5(c):
     c.setFont(KR, 12)
     c.setFillColor(NAVY2)
     c.drawCentredString(SW/2, SH-HDR-15,
-        '매출 7.5배 급성장 + 흑자전환  →  2026 목표 20억 (2025 대비 2.3배)')
+        '매출 7.5배 급성장 + 흑자전환  →  2026 기본 15억 / 공격 20억')
 
     y = CT - 32
 
@@ -606,7 +606,7 @@ def p5(c):
     kpi(c, MX,            y, kw, kh, '2024 매출', '1.15억', '결손', NAVY2, LBLUE, GOLD2)
     kpi(c, MX+(kw+8),     y, kw, kh, '2025 매출', '8.6억',  '흑자전환',  GREEN, LBLUE, GOLD2)
     kpi(c, MX+(kw+8)*2,   y, kw, kh, '성장 배수', 'x 7.5', '24→25 매출', BLUE,  LBLUE, GOLD2)
-    kpi(c, MX+(kw+8)*3,   y, kw, kh, '2026 목표', '20억',  '2.3배 성장', ROSE,  LBLUE, GOLD2)
+    kpi(c, MX+(kw+8)*3,   y, kw, kh, '2026 목표', '15~20억',  '기본·공격 시나리오', ROSE,  LBLUE, GOLD2)
     y -= kh + 14
 
     # 매출 추이 막대 차트 (좌측)
@@ -656,7 +656,7 @@ def p5(c):
 
     drivers = [
         ('1Q 신규+기존 거래처 주문',  '현재 2.0억 진행 중', NAVY),
-        ('온라인 B2B몰 수출\n(K-beauty4U)',     '분기당 3~5억 추정', BLUE),
+        ('온라인 B2B몰 수출\n(K-beauty4U)',     '가동 후 6~9개월 시차\n분기당 2~3억 단계 진입', BLUE),
         ('자체 브랜드 출시',         '하반기 매출 기여',   TEAL),
     ]
     for i, (t, sub, col) in enumerate(drivers):
@@ -686,7 +686,7 @@ def p6(c):
     c.setFont(KR, 12)
     c.setFillColor(NAVY2)
     c.drawCentredString(SW/2, SH-HDR-15,
-        '신용보증재단 보증 1.5억  →  디지털 인프라 + 자체 브랜드 (운영자금 + 시설자금 혼합)')
+        '신용보증재단 보증 1.5억  →  운영자금 1억 + 시설·창업자금 0.5억 (트랙 분리 신청)')
 
     y = CT - 32
 
@@ -804,7 +804,7 @@ def p7(c):
     kw = (CW-16)//3
     kh = 68
     kpi(c, MX,          y, kw, kh, '2025 매출', '8.6억',  '흑자전환 입증', NAVY,  LBLUE, GOLD2)
-    kpi(c, MX+kw+8,     y, kw, kh, '2026 목표', '20억',   '기본 시나리오', GREEN, LBLUE, GOLD2)
+    kpi(c, MX+kw+8,     y, kw, kh, '2026 목표', '15억',   '기본 (메인) — 가동 시차 반영', GREEN, LBLUE, GOLD2)
     kpi(c, MX+(kw+8)*2, y, kw, kh, '성장 배수', 'x 2.3',  '디지털+자체브랜드', BLUE,  LBLUE, GOLD2)
     y -= kh + 14
 
@@ -813,9 +813,10 @@ def p7(c):
     y -= 28
     rows = [
         ('1Q (확정)',  '2.0억',  '기존 거래처 + 신규',                  '진행중'),
-        ('2Q',         '4.0억',  'K-connect hub 가동 + 신규 거래선',     '계획'),
-        ('3Q',         '6.0억',  'K-beauty4U B2B 편집샵 본격 가동',      '계획'),
-        ('4Q',         '8.0억',  '자체 브랜드 출시 + 미국 진출',          '계획'),
+        ('2Q',         '2.5억',  'K-connect hub 구축·1차 가동 (런칭 시차)',     '계획'),
+        ('3Q',         '4.5억',  'K-beauty4U B2B 편집샵 트래픽 확보 단계',     '계획'),
+        ('4Q',         '6.0억',  '자체 브랜드 시제품 출시 + 미국 진출 초기',     '계획'),
+        ('보수 합계',   '15.0억', '기본 시나리오 (메인) — 가동 시차 반영',      '기본'),
         ('연 합계',     '20.0억', '기본 시나리오',                       '목표'),
     ]
     tbl(c, MX, y, ['분기', '매출 전망', '동력', '구분'],
@@ -1037,11 +1038,11 @@ def p10(c):
     c.drawCentredString(MX+lw/2, y-22, 'DSCR 추정 (보수)')
     c.setFont(KR, 32)
     c.setFillColor(GOLD2)
-    c.drawCentredString(MX+lw/2, y-56, '1.6 ~ 2.0 배')
+    c.drawCentredString(MX+lw/2, y-56, '1.2 ~ 1.8 배')
     c.setFont(KR, 9)
     c.setFillColor(LBLUE)
-    c.drawCentredString(MX+lw/2, y-74, '(2025 영업이익 - 신규인건비 - 보증료) ÷')
-    c.drawCentredString(MX+lw/2, y-85, '연 상환부담 약 4,300만 [보수 가정]')
+    c.drawCentredString(MX+lw/2, y-72, '영업이익률 7~12% 가정 감도분석')
+    c.drawCentredString(MX+lw/2, y-83, '2025 영업이익 [회사 기재] 확정 후 최종 산정')
 
     # 우: 청정 신용 + 비상 시나리오
     rx = MX + lw + 16
@@ -1073,7 +1074,7 @@ def p10(c):
     c.setFont(KR, 11)
     c.setFillColor(NAVY2)
     c.drawCentredString(SW/2, CB+8,
-        'DSCR 1.6~2.0배 (보수)  |  무차입 청정 신용 + 무체납  |  수출 매출채권 담보 여력 → 신용 적격성 우수')
+        'DSCR 1.2~1.8배 (보수·감도)  |  무차입 청정 신용 + 무체납  |  신용 적격성 양호 (영업이익 확정 후 최종 산정)')
 
 
 def p11(c):
@@ -1181,7 +1182,7 @@ def p11(c):
     c.setFont(KR, 8)
     c.setFillColor(MID)
     c.drawCentredString(SW/2, 14,
-        '본 사업계획서는 회사 측 보정 자료(NICE 등급 · 재무제표 분기 · 대표이력) 반영 후 최종본으로 완성됩니다.')
+        '본 사업계획서는 회사 측 보정 자료(NICE 등급 · 재무제표 분기 · 대표이력) 반영 후 최종본으로 완성됩니다. 매출 전망은 회사 자체 추정이며 보증재단 심사 결과를 보장하지 않습니다.')
 
 
 # ══════════════════════════════════════════════════════════════════════
