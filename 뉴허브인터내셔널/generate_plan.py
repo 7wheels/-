@@ -2,6 +2,12 @@
 (주)뉴허브인터내셔널 — 정책자금 사업계획서 (신용보증재단 보증신청용)
 16:9 슬라이드 / 인포그래픽 중심 / 11페이지
 
+전면 재작성: 실제 엑셀 데이터 반영
+- 2021.03.24 개업 (업력 5년)
+- 2025년 매출 8.6억 흑자전환 (2024년 1.15억 결손에서 7.5배 급성장)
+- 청년·여성 창업기업 / 청정 신용 / Brand Curation B2B 수출
+- 자금 1.5억: K-connect hub / K-beauty4U / 자체 브랜드
+
 작성: 히어컴퍼니 (HearCompany) Corporate Consulting
 """
 from reportlab.pdfgen import canvas as pdfcanvas
@@ -10,6 +16,7 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.cidfonts import UnicodeCIDFont
 from pathlib import Path
 import datetime
+import math
 
 pdfmetrics.registerFont(UnicodeCIDFont('HYGothic-Medium'))
 KR = 'HYGothic-Medium'
@@ -31,6 +38,7 @@ GREEN  = colors.HexColor('#16A34A')
 ROSE   = colors.HexColor('#E11D48')
 ORANGE = colors.HexColor('#EA580C')
 PURPLE = colors.HexColor('#7C3AED')
+PINK   = colors.HexColor('#DB2777')
 
 # ── 슬라이드 규격 ─────────────────────────────────────────────────────
 SW, SH = 960, 540
@@ -103,7 +111,7 @@ def hdr(c, title, pg):
     c.setFont(KR, 9)
     c.setFillColor(MID)
     c.drawString(MX, 7, COMPANY)
-    c.drawCentredString(SW/2, 7, '신용보증재단 보증신청용 사업계획서')
+    c.drawCentredString(SW/2, 7, '신용보증재단 보증신청용 사업계획서  |  ' + BRAND_TAG)
     c.drawRightString(SW-MX, 7, f'작성일 {TODAY_STR}')
 
 def sec(c, x, y, text, w=None, bg=NAVY, fg=WHITE, size=13):
@@ -138,8 +146,9 @@ def kpi(c, x, y, w, h, label, value, sub='',
         c.setFillColor(sub_col)
         c.drawCentredString(x+w/2, y-h+10, sub)
 
-def tbl(c, x, y, hdrs, rows, ws, rh=26, hh=28, lcols=None, highlight_last=False):
+def tbl(c, x, y, hdrs, rows, ws, rh=26, hh=28, lcols=None, highlight_last=False, highlight_rows=None):
     lcols = lcols or set()
+    highlight_rows = highlight_rows or set()
     tw = sum(ws)
     c.setFillColor(NAVY)
     c.rect(x, y-hh, tw, hh, fill=1, stroke=0)
@@ -152,8 +161,9 @@ def tbl(c, x, y, hdrs, rows, ws, rh=26, hh=28, lcols=None, highlight_last=False)
     y -= hh
     for ri, row in enumerate(rows):
         is_last = ri == len(rows)-1
-        bg = LGRAY if is_last and highlight_last else (WHITE if ri%2==0 else LGRAY)
-        if is_last and highlight_last:
+        is_hl = (is_last and highlight_last) or (ri in highlight_rows)
+        bg = WHITE if ri%2==0 else LGRAY
+        if is_hl:
             bg = colors.HexColor('#FFF3CD')
         c.setFillColor(bg)
         c.rect(x, y-rh, tw, rh, fill=1, stroke=0)
@@ -162,7 +172,7 @@ def tbl(c, x, y, hdrs, rows, ws, rh=26, hh=28, lcols=None, highlight_last=False)
         c.rect(x, y-rh, tw, rh, fill=0, stroke=1)
         cx = x
         for ci, (v, w) in enumerate(zip(row, ws)):
-            col = NAVY if ci==0 else (GOLD if is_last and highlight_last else DGRAY)
+            col = NAVY if ci==0 else (GOLD if is_hl else DGRAY)
             c.setFont(KR, 11)
             c.setFillColor(col)
             ty = y-rh+(rh-11)/2
@@ -213,20 +223,15 @@ def div(c, y, x1=None, x2=None):
 
 def donut_segment(c, cx, cy, r_out, r_in, start_deg, end_deg, fill_color):
     """도넛 차트 한 조각을 path로 그린다"""
-    import math
     p = c.beginPath()
     a1 = math.radians(start_deg)
     a2 = math.radians(end_deg)
-    # 외곽 시작점
     p.moveTo(cx + r_out*math.cos(a1), cy + r_out*math.sin(a1))
-    # 외곽 호 — 작은 스텝으로 근사
     steps = max(2, int(abs(end_deg-start_deg)/3))
     for i in range(1, steps+1):
         ang = a1 + (a2-a1)*i/steps
         p.lineTo(cx + r_out*math.cos(ang), cy + r_out*math.sin(ang))
-    # 내곽으로 이동
     p.lineTo(cx + r_in*math.cos(a2), cy + r_in*math.sin(a2))
-    # 내곽 호 (반대 방향)
     for i in range(1, steps+1):
         ang = a2 - (a2-a1)*i/steps
         p.lineTo(cx + r_in*math.cos(ang), cy + r_in*math.sin(ang))
@@ -260,7 +265,7 @@ def p1(c):
 
     c.setFont(KR, 11)
     c.setFillColor(LBLUE)
-    c.drawString(MX+6, SH-78, '수입유통 · 무역업  |  유럽 3국 (프랑스 · 스페인 · 이탈리아)')
+    c.drawString(MX+6, SH-78, 'B2B 수출 · Brand Curation  |  화장품·식품·기계·해외 컨설팅')
 
     c.setFont(KR, 32)
     c.setFillColor(WHITE)
@@ -275,7 +280,7 @@ def p1(c):
 
     c.setFont(KR, 13)
     c.setFillColor(LBLUE)
-    c.drawString(MX+6, SH-162, '21년 안정 영업의 다국·다품목 수입유통 전문기업')
+    c.drawString(MX+6, SH-162, '청년·여성 창업기업  |  매출 7.5배 급성장 + 흑자전환')
 
     c.setFont(KR, 44)
     c.setFillColor(GOLD2)
@@ -287,13 +292,14 @@ def p1(c):
 
     c.setFont(KR, 12)
     c.setFillColor(MGRAY)
-    c.drawString(MX+6, SH-282, f'화장품 · 식품 · 전자제품  |  제조업 신규 추가 추진')
+    c.drawString(MX+6, SH-282, '디지털 인프라 (4개 언어 사이트·B2B 편집샵) + 자체 브랜드 화장품')
 
     # 하단 기재 필요 표시
     c.setFont(KR, 10)
     c.setFillColor(MID)
+    c.drawString(MX+6, 64, '서울시 강서구 마곡 중앙1로 10. 802호')
     c.drawString(MX+6, 50, '대표이사 [회사 기재]   |   사업자등록번호 [회사 기재]')
-    c.drawString(MX+6, 36, f'작성일  {TODAY_STR}')
+    c.drawString(MX+6, 36, f'개업일 2021.03.24   |   작성일 {TODAY_STR}')
 
     # 우측 KPI 카드 4개
     rx = int(SW*0.62)
@@ -302,10 +308,10 @@ def p1(c):
     kw = (rw-8)//2
 
     items = [
-        ('업력',          '21', '년',   NAVY,  LBLUE, GOLD2),
-        ('주요 거래국',    '3',  '국',   BLUE,  LBLUE, GOLD2),
-        ('연 매출(2025)', '8',  '억 원', TEAL,  LBLUE, GOLD2),
-        ('일자리 창출',    '+2', '명 예정', ROSE, LBLUE, GOLD2),
+        ('업력',          '5',  '년',     NAVY,  LBLUE, GOLD2),
+        ('2025 매출',     '8.6','억 (흑자전환)', BLUE, LBLUE, GOLD2),
+        ('2026 목표',     '20', '억 원',  TEAL,  LBLUE, GOLD2),
+        ('일자리 창출',    '+1~2','명 예정',  ROSE, LBLUE, GOLD2),
     ]
     for i, (lbl, val, unit, bg, lc, vc) in enumerate(items):
         col = i % 2
@@ -328,7 +334,7 @@ def p1(c):
 
 
 def p2(c):
-    """2페이지 — 회사 개요 · 연혁"""
+    """2페이지 — 회사 개요 · 연혁 (5개 마일스톤 + 대표 정보)"""
     hdr(c, '회사 개요 · 연혁', 2)
     y = CT
 
@@ -338,13 +344,13 @@ def p2(c):
     info = [
         ('회사명',       COMPANY),
         ('영문명',       COMPANY_EN),
-        ('대표이사',     '[회사 기재]'),
-        ('업종',         '수입유통업 (제조업 신규 추가 예정)'),
-        ('업력',         '21년 (2005년경 설립 — 정확한 설립일 [회사 기재])'),
-        ('주요 거래국',  '프랑스 · 스페인 · 이탈리아 (유럽 3국)'),
-        ('주요 품목',    '화장품 · 식품 · 전자제품'),
+        ('개업일',       '2021.03.24  (업력 약 5년 — 청년 스타트업)'),
+        ('사업장',       '서울시 강서구 마곡 중앙1로 10. 802호'),
+        ('주업종',       '화장품·방향제·세제 / 무역중개·알선 / 식품·생활잡화 / 전자상거래'),
+        ('대표자',       '여성 · 사업운영 7년 · 프랑스어 통역 가이드 자격 · 주식 80%'),
+        ('대표 전공',     '불어불문학과 / 아프리카 지역학  →  EMEA 시장 직접 소통 역량'),
     ]
-    rh = 22
+    rh = 20
     for i, (k, v) in enumerate(info):
         ry = y - i*rh
         bg = WHITE if i%2==0 else LGRAY
@@ -355,23 +361,35 @@ def p2(c):
         c.rect(MX, ry-rh, CW, rh, fill=0, stroke=1)
         c.setFont(KR, 10)
         c.setFillColor(NAVY)
-        c.drawString(MX+10, ry-rh+6, k)
-        c.setFont(KR, 11)
+        c.drawString(MX+10, ry-rh+5, k)
+        c.setFont(KR, 10)
         c.setFillColor(DGRAY)
-        c.drawString(MX+150, ry-rh+6, v)
-    y -= rh*len(info) + 16
+        c.drawString(MX+130, ry-rh+5, v)
+    y -= rh*len(info) + 14
 
-    # 연혁 타임라인
-    sec(c, MX, y, '21년 연혁 타임라인')
-    y -= 32
+    # 청년·여성 창업기업 배지
+    bx = MX
+    badges = [
+        ('청년·여성 창업기업', GOLD, NAVY2),
+        ('매출 7.5배 급성장', ROSE, WHITE),
+        ('2025 흑자전환', GREEN, WHITE),
+        ('무차입 청정 신용', BLUE, WHITE),
+        ('수출실적증명원 발급 가능', TEAL, WHITE),
+    ]
+    for t, bg, fg in badges:
+        bx += badge(c, bx, y, t, bg=bg, fg=fg, size=10)
+    y -= 26
+
+    # 5개 마일스톤 타임라인
+    sec(c, MX, y, '5개 마일스톤 — 2021 개업 → 2026 디지털 확장')
+    y -= 30
 
     timeline = [
-        ('2005',    '설립\n(추정)', NAVY),
-        ('2010s',   '유럽 거래선\n다변화', BLUE),
-        ('2020s',   '다품목\n포트폴리오\n구축', TEAL),
-        ('2025',    '연매출\n8억 달성', GREEN),
-        ('2026',    '제조업\n신규 추가\n+ 일자리 2명', GOLD),
-        ('2027~',   '종합 무역\n· 제조 기업\n도약', ROSE),
+        ('2021.03', '개업\n(마곡 본사)',                  NAVY),
+        ('2023',    '매출 0.75억\n사업 정착',              BLUE),
+        ('2024',    '매출 1.15억\n거래선 발굴',            TEAL),
+        ('2025',    '매출 8.6억\n흑자전환',               GREEN),
+        ('2026',    '디지털 인프라\n+ 자체 브랜드\n+ 미국 진출', GOLD),
     ]
     n = len(timeline)
     tw = (CW - (n-1)*8) / n
@@ -382,13 +400,11 @@ def p2(c):
         c.roundRect(tx, CB, tw, th, 5, fill=1, stroke=0)
         c.setFillColor(GOLD)
         c.roundRect(tx, CB+th-5, tw, 5, 2, fill=1, stroke=0)
-        # 연도
         c.setFont(KR, 14)
-        c.setFillColor(GOLD2)
+        c.setFillColor(GOLD2 if bg != GOLD else NAVY2)
         c.drawCentredString(tx+tw/2, CB+th-22, yr)
-        # 본문
         c.setFont(KR, 10)
-        c.setFillColor(WHITE)
+        c.setFillColor(WHITE if bg != GOLD else NAVY2)
         py = CB+th-44
         for ln in body.split('\n'):
             c.drawCentredString(tx+tw/2, py, ln)
@@ -401,135 +417,137 @@ def p2(c):
 
 
 def p3(c):
-    """3페이지 — 사업 현황 (수입유통)"""
-    hdr(c, '사업 현황 — 수입유통 매트릭스', 3)
+    """3페이지 — 사업 모델 (Brand Curation)"""
+    hdr(c, '사업 모델 — Brand Curation', 3)
     y = CT
 
     # 상단 메시지
     c.setFillColor(LGRAY)
-    c.roundRect(MX, y-38, CW, 38, 4, fill=1, stroke=0)
+    c.roundRect(MX, y-44, CW, 44, 4, fill=1, stroke=0)
     c.setFillColor(GOLD)
-    c.rect(MX, y-38, 4, 38, fill=1, stroke=0)
-    c.setFont(KR, 12)
-    c.setFillColor(DGRAY)
-    c.drawString(MX+14, y-15,
-        '유럽 3국 × 3품목 — 상위 4개 셀이 매출의 약 75% (핵심 거래 집중, 리스크 분산)')
+    c.rect(MX, y-44, 4, 44, fill=1, stroke=0)
+    c.setFont(KR, 13)
+    c.setFillColor(NAVY)
+    c.drawString(MX+14, y-18, 'Brand Curation — 단순 수출이 아닌, 바이어 입장의 시장 분석 기반 맞춤 제안')
     c.setFont(KR, 10)
     c.setFillColor(MID)
-    c.drawString(MX+14, y-30,
-        '단일 거래국·단일 품목 의존도 ZERO — 환율·시장 리스크 자연 분산')
-    y -= 50
+    c.drawString(MX+14, y-34,
+        '바이어 시장·소비자 니즈 분석 → 제품·브랜드 큐레이션 → 신뢰 기반 장기 파트너십 → 반복 주문·컨설팅 마진')
+    y -= 56
 
-    # 3 × 3 매트릭스
-    sec(c, MX, y, '국가 × 품목 매트릭스')
-    y -= 30
+    # 좌측: 단순 수출 vs Brand Curation 비교
+    lw = CW*0.46
+    sec(c, MX, y, '비교 : 단순 수출 vs Brand Curation')
+    cy = y - 30
 
-    countries = ['프랑스', '스페인', '이탈리아']
-    products = ['화장품', '식품', '전자제품']
-    cell_w = (CW - 100) / 3
-    cell_h = 50
-    head_h = 26
-    # 헤더 행
+    # 헤더
+    c.setFillColor(MGRAY)
+    c.rect(MX, cy-22, lw/2, 22, fill=1, stroke=0)
     c.setFillColor(NAVY)
-    c.rect(MX, y-head_h, 100, head_h, fill=1, stroke=0)
-    for i, ct in enumerate(countries):
-        c.setFillColor(NAVY)
-        c.rect(MX+100+i*cell_w, y-head_h, cell_w, head_h, fill=1, stroke=0)
-        c.setFont(KR, 12)
-        c.setFillColor(WHITE)
-        c.drawCentredString(MX+100+i*cell_w+cell_w/2, y-head_h+8, ct)
-    y -= head_h
-    # 셀 데이터
-    cell_data = {
-        ('화장품', '프랑스'):   '프리미엄 스킨케어\n향수',
-        ('화장품', '스페인'):   '오가닉 라인\n색조',
-        ('화장품', '이탈리아'): '럭셔리 브랜드\n고급 화장품',
-        ('식품', '프랑스'):     '와인·치즈\n제과',
-        ('식품', '스페인'):     '올리브유·하몽\n와인',
-        ('식품', '이탈리아'):   '파스타·올리브유\n치즈·와인',
-        ('전자제품', '프랑스'): '소형가전\n주방가전',
-        ('전자제품', '스페인'): '디자인 가전\n소형 IT',
-        ('전자제품', '이탈리아'): '명품 주방가전\n프리미엄 IT',
-    }
-    cell_colors = [LGRAY, WHITE, LGRAY]
-    for ri, prod in enumerate(products):
-        # 품목 레이블
-        c.setFillColor(BLUE if ri%2==0 else TEAL)
-        c.rect(MX, y-cell_h, 100, cell_h, fill=1, stroke=0)
-        c.setFont(KR, 12)
-        c.setFillColor(WHITE)
-        c.drawCentredString(MX+50, y-cell_h/2-4, prod)
-        for ci, ct in enumerate(countries):
-            cx = MX+100+ci*cell_w
-            c.setFillColor(cell_colors[(ri+ci)%2])
-            c.rect(cx, y-cell_h, cell_w, cell_h, fill=1, stroke=0)
-            c.setStrokeColor(MGRAY)
-            c.setLineWidth(0.4)
-            c.rect(cx, y-cell_h, cell_w, cell_h, fill=0, stroke=1)
-            txt = cell_data.get((prod, ct), '')
-            c.setFont(KR, 9)
-            c.setFillColor(DGRAY)
-            for li, ln in enumerate(txt.split('\n')):
-                c.drawCentredString(cx+cell_w/2, y-18-li*12, ln)
-        y -= cell_h
-    y -= 16
+    c.rect(MX+lw/2, cy-22, lw/2, 22, fill=1, stroke=0)
+    c.setFont(KR, 11)
+    c.setFillColor(NAVY2)
+    c.drawCentredString(MX+lw/4, cy-15, '단순 수출')
+    c.setFillColor(GOLD2)
+    c.drawCentredString(MX+lw*3/4, cy-15, 'Brand Curation (당사)')
+    cy -= 22
 
-    # 매출 8억 비중 추정
-    sec(c, MX, y, '2025년 매출 8억원 — 품목별 비중 [추정]')
-    y -= 28
-    bars = [
-        ('화장품',    0.45, '약 3.6억', NAVY),
-        ('식품',      0.35, '약 2.8억', BLUE),
-        ('전자제품',  0.20, '약 1.6억', TEAL),
+    rows = [
+        ('가격 경쟁 중심', '바이어 입장 시장 분석'),
+        ('1회성 거래',     '장기 파트너십'),
+        ('마진율 낮음',     '컨설팅 마진 + 안정 거래선'),
+        ('범용 제품',       '맞춤 제품·브랜드 제안'),
     ]
-    bar_w = CW - 200
-    for lbl, pct, val, col in bars:
-        c.setFont(KR, 11)
-        c.setFillColor(DGRAY)
-        c.drawString(MX, y-3, lbl)
-        c.setFillColor(LGRAY)
-        c.roundRect(MX+80, y-14, bar_w, 12, 6, fill=1, stroke=0)
-        c.setFillColor(col)
-        c.roundRect(MX+80, y-14, bar_w*pct, 12, 6, fill=1, stroke=0)
+    rrh = 26
+    for i, (a, b) in enumerate(rows):
+        bg = WHITE if i%2==0 else LGRAY
+        c.setFillColor(bg)
+        c.rect(MX, cy-rrh, lw, rrh, fill=1, stroke=0)
+        c.setStrokeColor(MGRAY)
+        c.setLineWidth(0.4)
+        c.rect(MX, cy-rrh, lw, rrh, fill=0, stroke=1)
+        c.line(MX+lw/2, cy-rrh, MX+lw/2, cy)
         c.setFont(KR, 10)
+        c.setFillColor(MID)
+        c.drawCentredString(MX+lw/4, cy-rrh+8, a)
         c.setFillColor(NAVY)
-        c.drawString(MX+90+bar_w, y-3, val)
-        y -= 20
+        c.drawCentredString(MX+lw*3/4, cy-rrh+8, b)
+        cy -= rrh
 
-    # 보정 안내
-    c.setFont(KR, 8)
-    c.setFillColor(MID)
-    c.drawString(MX, CB-2, '* 품목별 비중은 추정치 — 회사 측 정확한 매출 분기 데이터로 보정 필요')
+    # 우측: 주력 품목 + 거래처
+    rx = MX + lw + 16
+    rw = CW - lw - 16
+    ry = y
+    sec(c, rx, ry, '주력 품목 & 거래처')
+    ry -= 30
+
+    cats = [
+        ('① 화장품',      NAVY,  'K-뷰티 — 핵심 매출원\n프리미엄·자연주의 라인'),
+        ('② 식품',        BLUE,  'K-푸드 — 안정 카테고리\n프랜차이즈·대형마트 입점'),
+        ('③ 기계',        TEAL,  '산업·가전\n수요 기반 큐레이션'),
+        ('④ 해외 컨설팅',  PURPLE,'바이어 진출 컨설팅\n부가 마진 확보'),
+    ]
+    cw_l = (rw-8)/2
+    ch_l = 50
+    for i, (t, bg, body) in enumerate(cats):
+        col = i % 2
+        row = i // 2
+        cx = rx + col*(cw_l+8)
+        cy = ry - row*(ch_l+8)
+        c.setFillColor(bg)
+        c.roundRect(cx, cy-ch_l, cw_l, ch_l, 4, fill=1, stroke=0)
+        c.setFillColor(GOLD)
+        c.rect(cx, cy-ch_l, 4, ch_l, fill=1, stroke=0)
+        c.setFont(KR, 11)
+        c.setFillColor(GOLD2)
+        c.drawString(cx+12, cy-18, t)
+        c.setFont(KR, 9)
+        c.setFillColor(WHITE)
+        py = cy-32
+        for ln in body.split('\n'):
+            c.drawString(cx+12, py, ln)
+            py -= 11
+
+    # 하단: 거래처 & 확장
+    c.setFillColor(GOLD)
+    c.rect(MX, CB, CW, 30, fill=1, stroke=0)
+    c.setFont(KR, 11)
+    c.setFillColor(NAVY2)
+    c.drawCentredString(SW/2, CB+18,
+        '현재 거래처 : 유럽 Franchise Shop · 대형마트   |   확장 (2026~) : 미국 온라인 플랫폼 · 해외 인플루언서')
+    c.setFont(KR, 9)
+    c.setFillColor(NAVY2)
+    c.drawCentredString(SW/2, CB+5, '* 수출실적증명원 발급 가능 → 보증재단 수출 가산점 항목 충족')
 
 
 def p4(c):
-    """4페이지 — 시장 환경 · 경쟁력 · SWOT"""
-    hdr(c, '시장 환경 · 경쟁력 · SWOT', 4)
+    """4페이지 — 시장 환경 · SWOT"""
+    hdr(c, '시장 환경 · SWOT', 4)
     y = CT
 
-    # 좌측: 시장 트렌드
+    # 좌측: K-뷰티 EMEA 시장 트렌드
     lw = CW*0.46
-    sec(c, MX, y, '유럽 수입 시장 트렌드')
-    y -= 30
+    sec(c, MX, y, 'K-뷰티 EMEA 시장 트렌드')
+    cy = y - 30
 
     trends = [
-        (NAVY,  '프리미엄 화장품',  'K-뷰티 역수입·럭셔리 라인 성장'),
-        (BLUE,  '유럽 식품 프리미엄', '와인·올리브유·치즈 수요 안정'),
-        (TEAL,  '소형·디자인 가전', '주방·생활가전 시장 연 5%+ 성장'),
-        (GREEN, '환율 안정 국면',   'EUR/KRW 안정 — 수입 환경 우호적'),
+        (NAVY,  'K-뷰티 글로벌 수요',  'EMEA 프리미엄·자연주의 라인 지속 확대'),
+        (BLUE,  '유럽 프랜차이즈',      'K-뷰티·K-푸드 입점 적극화'),
+        (TEAL,  '미국 온라인 진입',     '아마존·세포라·이커머스 진입장벽 완화'),
+        (PINK,  '인플루언서 마케팅',    'SNS·인플루언서로 신생 브랜드 글로벌 진출'),
     ]
     for i, (col, t, sub) in enumerate(trends):
-        iy = y - i*38
+        iy = cy - i*42
         c.setFillColor(LGRAY)
-        c.roundRect(MX, iy-34, lw, 32, 4, fill=1, stroke=0)
+        c.roundRect(MX, iy-38, lw, 36, 4, fill=1, stroke=0)
         c.setFillColor(col)
-        c.roundRect(MX, iy-34, 5, 32, 2, fill=1, stroke=0)
+        c.roundRect(MX, iy-38, 5, 36, 2, fill=1, stroke=0)
         c.setFont(KR, 11)
         c.setFillColor(col)
         c.drawString(MX+14, iy-13, t)
         c.setFont(KR, 9)
         c.setFillColor(MID)
-        c.drawString(MX+14, iy-26, sub)
+        c.drawString(MX+14, iy-28, sub)
 
     # 우측: SWOT 2x2
     rx = MX + lw + 16
@@ -541,10 +559,14 @@ def p4(c):
     sw_w = (rw-8)/2
     sw_h = (CT - 30 - CB - 8)/2
     swot = [
-        ('S 강점', NAVY,  '21년 업력 신뢰자산\n다국·다품목 분산\n검증된 거래선'),
-        ('W 약점', ORANGE,'제조 기반 미보유\n자체 브랜드 부재\n환율 노출도'),
-        ('O 기회', GREEN, 'K-푸드/뷰티 글로벌\n프리미엄 수요 성장\n제조 다각화'),
-        ('T 위협', ROSE,  'EUR 환율 변동\n경쟁사 직수입 증가\n글로벌 공급 리스크'),
+        ('S 강점', NAVY,
+         'Brand Curation 차별화\n프랑스어·EMEA 언어 역량\n매출 급성장·흑자전환\n청정 신용 + 청년·여성 대표'),
+        ('W 약점', ORANGE,
+         '1인 기업 (인력 한계)\n자체 브랜드·연구소·특허 부재\n자체 디지털 인프라 미구축'),
+        ('O 기회', GREEN,
+         'K-뷰티 글로벌 확산\n미국 온라인 진입\nEMEA 입점 가속\n청년·여성 정책 우대'),
+        ('T 위협', ROSE,
+         'EUR/USD 환율 변동\n경쟁 심화\n글로벌 공급·물류 리스크'),
     ]
     for i, (t, bg, body) in enumerate(swot):
         col = i % 2
@@ -561,103 +583,110 @@ def p4(c):
         py = sy-34
         for ln in body.split('\n'):
             c.drawString(sx+10, py, ln)
-            py -= 13
+            py -= 12
 
 
 def p5(c):
-    """5페이지 — 신규 사업 (제조업 추가)"""
-    hdr(c, '신규 사업 — 제조업 추가 추진', 5)
-    y = CT
-
-    # 명분 배너
-    c.setFillColor(NAVY)
-    c.roundRect(MX, y-50, CW, 50, 5, fill=1, stroke=0)
-    c.setFillColor(GOLD)
-    c.rect(MX, y-50, 5, 50, fill=1, stroke=0)
-    c.setFont(KR, 14)
-    c.setFillColor(GOLD2)
-    c.drawString(MX+18, y-22, '"수입유통 + 자체 제조" 결합으로 부가가치 향상 및 매출 안정화')
-    c.setFont(KR, 11)
-    c.setFillColor(LBLUE)
-    c.drawString(MX+18, y-40, '21년 유통 경험으로 시장 수요를 읽고, 자체 제조로 마진율·브랜드 자산을 동시에 확보')
-    y -= 62
-
-    # 좌측: 카테고리 후보 3개
-    lw = CW*0.42
-    sec(c, MX, y, '제조 카테고리 후보 [회사 확정]')
-    ly = y - 30
-
-    cats = [
-        ('① 화장품 OEM',  NAVY,  'K-뷰티 역수입 노하우\n+ 자체 브랜드 OEM'),
-        ('② 식품 가공',    BLUE,  '유럽 원료 수입 +\n국내 가공·재포장'),
-        ('③ 전자제품 조립', TEAL,  '수입 부품·완제품\n+ 국내 조립·SI'),
-    ]
-    cw_l = lw
-    ch_l = 56
-    for i, (t, bg, body) in enumerate(cats):
-        cy = ly - i*(ch_l+6)
-        c.setFillColor(bg)
-        c.roundRect(MX, cy-ch_l, cw_l, ch_l, 4, fill=1, stroke=0)
-        c.setFillColor(GOLD)
-        c.rect(MX, cy-ch_l, 4, ch_l, fill=1, stroke=0)
-        c.setFont(KR, 13)
-        c.setFillColor(GOLD2)
-        c.drawString(MX+14, cy-22, t)
-        c.setFont(KR, 10)
-        c.setFillColor(WHITE)
-        py = cy-38
-        for ln in body.split('\n'):
-            c.drawString(MX+14, py, ln)
-            py -= 13
-
-    # 우측: 추진 로드맵
-    rx = MX + lw + 16
-    rw = CW - lw - 16
-    ry = y
-    sec(c, rx, ry, '6~12개월 추진 로드맵')
-    ry -= 30
-
-    roadmap = [
-        ('1~2개월',  '카테고리 확정 · 제조 파트너 선정', GOLD),
-        ('3~4개월',  '소요 자금 집행 · 시설·계약',        BLUE),
-        ('5~7개월',  '시제품 제작 · 인증 · 시장 테스트',   TEAL),
-        ('8~10개월', '본격 양산 · 마케팅 런칭',            GREEN),
-        ('11~12개월','매출 발생 · 채널 확장',              ROSE),
-    ]
-    for i, (period, content, col) in enumerate(roadmap):
-        iy = ry - i*30
-        c.setFillColor(col)
-        c.circle(rx+10, iy-10, 6, fill=1, stroke=0)
-        if i < len(roadmap)-1:
-            c.setStrokeColor(MGRAY)
-            c.setLineWidth(1.5)
-            c.line(rx+10, iy-16, rx+10, iy-34)
-        c.setFont(KR, 10)
-        c.setFillColor(NAVY)
-        c.drawString(rx+24, iy-14, period)
-        c.setFont(KR, 10)
-        c.setFillColor(DGRAY)
-        c.drawString(rx+90, iy-14, content)
-
-    # 하단: 예상 효과
-    c.setFillColor(GOLD)
-    c.rect(MX, CB, CW, 26, fill=1, stroke=0)
-    c.setFont(KR, 12)
-    c.setFillColor(NAVY2)
-    c.drawCentredString(SW/2, CB+8,
-        '예상 효과  —  제조업 추가 → 마진율 5~8%p 향상 + 자체 브랜드 자산 + 일자리 2명 창출')
-
-
-def p6(c):
-    """6페이지 — 자금 조달 · 사용 계획 (★ 핵심)"""
-    hdr(c, '자금 조달 · 사용 계획  ★', 6)
+    """5페이지 — 매출 급성장 서사 (★ 핵심)"""
+    hdr(c, '매출 급성장 서사  ★', 5)
 
     # 골드 서브 배너
     c.setFillColor(GOLD)
     c.rect(0, SH-HDR-26, SW, 24, fill=1, stroke=0)
     c.setFont(KR, 12)
     c.setFillColor(NAVY2)
-    c.drawCentredString(SW/2, SH-HDR-15, '신용보증재단 보증 1.5억 → 협력은행 융자 1.5억 실행')
+    c.drawCentredString(SW/2, SH-HDR-15,
+        '매출 7.5배 급성장 + 흑자전환  →  2026 목표 20억 (2025 대비 2.3배)')
+
+    y = CT - 32
+
+    # 상단 KPI 4개
+    kw = (CW-24)//4
+    kh = 70
+    kpi(c, MX,            y, kw, kh, '2024 매출', '1.15억', '결손', NAVY2, LBLUE, GOLD2)
+    kpi(c, MX+(kw+8),     y, kw, kh, '2025 매출', '8.6억',  '흑자전환',  GREEN, LBLUE, GOLD2)
+    kpi(c, MX+(kw+8)*2,   y, kw, kh, '성장 배수', 'x 7.5', '24→25 매출', BLUE,  LBLUE, GOLD2)
+    kpi(c, MX+(kw+8)*3,   y, kw, kh, '2026 목표', '20억',  '2.3배 성장', ROSE,  LBLUE, GOLD2)
+    y -= kh + 14
+
+    # 매출 추이 막대 차트 (좌측)
+    lw = CW*0.55
+    sec(c, MX, y, '매출 추이 (단위: 억)')
+    cy = y - 30
+
+    bars_data = [
+        ('2023', 0.75,  '0.75억', '결손',     MGRAY),
+        ('2024', 1.15,  '1.15억', '결손',     ORANGE),
+        ('2025', 8.6,   '8.6억',  '흑자전환', GREEN),
+        ('26.1Q', 2.0,  '2.0억',  '진행중',   BLUE),
+        ('2026목표', 20.0, '20억', '계획',    GOLD),
+    ]
+    max_val = 22
+    chart_h = cy - CB - 70
+    chart_w = lw - 60
+    bar_w = chart_w / len(bars_data) - 12
+    base_y = CB + 30
+    for i, (label, val, vstr, status, col) in enumerate(bars_data):
+        bx = MX + 50 + i*(bar_w+12)
+        bh = max(8, chart_h * (val/max_val))
+        c.setFillColor(col)
+        c.roundRect(bx, base_y, bar_w, bh, 3, fill=1, stroke=0)
+        # 값 라벨
+        c.setFont(KR, 11)
+        c.setFillColor(NAVY)
+        c.drawCentredString(bx+bar_w/2, base_y+bh+5, vstr)
+        # X축 라벨
+        c.setFont(KR, 10)
+        c.setFillColor(DGRAY)
+        c.drawCentredString(bx+bar_w/2, base_y-14, label)
+        c.setFont(KR, 8)
+        c.setFillColor(MID)
+        c.drawCentredString(bx+bar_w/2, base_y-26, status)
+    # X축 베이스라인
+    c.setStrokeColor(MGRAY)
+    c.setLineWidth(0.8)
+    c.line(MX+30, base_y, MX+lw-10, base_y)
+
+    # 우측: 1년 내 20억 달성 근거
+    rx = MX + lw + 16
+    rw = CW - lw - 16
+    ry = y
+    sec(c, rx, ry, '20억 달성 근거 (3대 동력)')
+    ry -= 30
+
+    drivers = [
+        ('1Q 신규+기존 거래처 주문',  '현재 2.0억 진행 중', NAVY),
+        ('온라인 B2B몰 수출\n(K-beauty4U)',     '분기당 3~5억 추정', BLUE),
+        ('자체 브랜드 출시',         '하반기 매출 기여',   TEAL),
+    ]
+    for i, (t, sub, col) in enumerate(drivers):
+        iy = ry - i*60
+        c.setFillColor(col)
+        c.roundRect(rx, iy-54, rw, 52, 4, fill=1, stroke=0)
+        c.setFillColor(GOLD)
+        c.rect(rx, iy-54, 4, 52, fill=1, stroke=0)
+        c.setFont(KR, 11)
+        c.setFillColor(GOLD2)
+        py = iy - 14
+        for ln in t.split('\n'):
+            c.drawString(rx+12, py, ln)
+            py -= 13
+        c.setFont(KR, 10)
+        c.setFillColor(LBLUE)
+        c.drawString(rx+12, iy-46, sub)
+
+
+def p6(c):
+    """6페이지 — 자금 사용 계획 (3대 사용처)"""
+    hdr(c, '자금 사용 계획 — 3대 사용처', 6)
+
+    # 골드 서브 배너
+    c.setFillColor(GOLD)
+    c.rect(0, SH-HDR-26, SW, 24, fill=1, stroke=0)
+    c.setFont(KR, 12)
+    c.setFillColor(NAVY2)
+    c.drawCentredString(SW/2, SH-HDR-15,
+        '신용보증재단 보증 1.5억  →  디지털 인프라 + 자체 브랜드 (운영자금 + 시설자금 혼합)')
 
     y = CT - 32
 
@@ -668,11 +697,11 @@ def p6(c):
     flow = [
         ('신용보증재단',  '보증서 발급\n1.5억 원',     NAVY),
         ('협력 은행',     '여신 실행\n1.5억 원',       BLUE),
-        ('(주)뉴허브',    '자금 수령\n사업 집행',       TEAL),
-        ('자금 사용',     '운영 / 결제\n/ 제조',         GOLD),
+        ('(주)뉴허브',    '자금 수령\n3대 사용처 집행',  TEAL),
+        ('사업 확장',     '디지털 인프라\n+ 자체 브랜드', GOLD),
     ]
     fw = (CW - 3*22) / 4
-    fh = 60
+    fh = 56
     for i, (name, sub, col) in enumerate(flow):
         fx = MX + i*(fw+22)
         c.setFillColor(col)
@@ -684,7 +713,7 @@ def p6(c):
         c.drawCentredString(fx+fw/2, y-22, name)
         c.setFont(KR, 9)
         c.setFillColor(LBLUE if col != GOLD else NAVY)
-        py = y-38
+        py = y-36
         for ln in sub.split('\n'):
             c.drawCentredString(fx+fw/2, py, ln)
             py -= 11
@@ -692,19 +721,19 @@ def p6(c):
             c.setFont(KR, 18)
             c.setFillColor(GOLD)
             c.drawCentredString(fx+fw+11, y-fh/2-6, '▶')
-    y -= fh + 16
+    y -= fh + 14
 
-    # 하단: 도넛 차트 (자금 사용처)
-    sec(c, MX, y, '자금 사용처 분배')
+    # 도넛 차트 + 3대 사용처 카드
+    sec(c, MX, y, '3대 사용처 분배 (예시 — 회사 측 보정)')
     y -= 30
 
     # 도넛 차트 (좌측)
-    cx, cy = MX + 100, CB + 80
-    r_out, r_in = 70, 38
+    cx, cy = MX + 90, CB + 78
+    r_out, r_in = 64, 34
     segments = [
-        ('운영자금',           0.40, NAVY,  '6,000만원'),
-        ('수입결제',           0.40, BLUE,  '6,000만원'),
-        ('제조 시제품·시장테스트', 0.20, TEAL,  '3,000만원'),
+        ('K-connect hub',    0.30, NAVY,  '4,500만'),
+        ('K-beauty4U',       0.40, BLUE,  '6,000만'),
+        ('자체 브랜드',       0.30, TEAL,  '4,500만'),
     ]
     start = 90
     for lbl, pct, col, val in segments:
@@ -712,73 +741,132 @@ def p6(c):
         donut_segment(c, cx, cy, r_out, r_in, start, end, col)
         start = end
     # 도넛 중앙 텍스트
-    c.setFont(KR, 11)
+    c.setFont(KR, 10)
     c.setFillColor(NAVY)
-    c.drawCentredString(cx, cy+8, '총 보증액')
-    c.setFont(KR, 16)
+    c.drawCentredString(cx, cy+6, '총 보증액')
+    c.setFont(KR, 15)
     c.setFillColor(GOLD)
     c.drawCentredString(cx, cy-12, '1.5억 원')
 
-    # 우측 범례 + 표
-    lx = MX + 200
-    lw = CW - 200
-    legend_y = y - 8
-    for i, (lbl, pct, col, val) in enumerate(segments):
-        ly = legend_y - i*36
-        c.setFillColor(col)
-        c.roundRect(lx, ly-22, 16, 16, 2, fill=1, stroke=0)
+    # 우측 3대 카드
+    lx = MX + 180
+    cwx = CW - 180
+    card_w = (cwx - 16)/3
+    card_h = 130
+    cards = [
+        ('① K-connect hub', NAVY, GOLD2,
+         '자사 온라인 웹사이트\n한·영·불·아랍 4개 언어\n글로벌 바이어 진입점',
+         '4,500만원 (30%)', '운영자금'),
+        ('② K-beauty4U', BLUE, GOLD2,
+         'EMEA 화장품 Online\nB2B 편집샵 사이트 개발\n바이어 자동 주문 처리',
+         '6,000만원 (40%)', '운영 + 시설성'),
+        ('③ 자체 브랜드', TEAL, GOLD2,
+         '자사 브랜드 화장품\n개발·생산 (기획 완료)\nOEM 우선 검토',
+         '4,500만원 (30%)', '시설 + 운영자금'),
+    ]
+    for i, (t, bg, fg, body, amt, kind) in enumerate(cards):
+        cxc = lx + i*(card_w+8)
+        c.setFillColor(bg)
+        c.roundRect(cxc, CB+6, card_w, card_h, 5, fill=1, stroke=0)
+        c.setFillColor(GOLD)
+        c.roundRect(cxc, CB+6+card_h-5, card_w, 5, 2, fill=1, stroke=0)
         c.setFont(KR, 12)
-        c.setFillColor(NAVY)
-        c.drawString(lx+24, ly-14, f'{lbl}  {int(pct*100)}%')
-        c.setFont(KR, 10)
-        c.setFillColor(MID)
-        c.drawString(lx+24, ly-28, f'{val}  —  ' + {
-            '운영자금':           '인건비 · 임차료 · 관리비 · 광고비',
-            '수입결제':           'L/C 개설 · T/T 송금 · 통관 · 운송',
-            '제조 시제품·시장테스트': '시제품 제작 · 시장 테스트 · 인증 1차',
-        }[lbl])
+        c.setFillColor(fg)
+        c.drawString(cxc+10, CB+6+card_h-22, t)
+        c.setStrokeColor(colors.HexColor('#FFFFFF40'))
+        c.setLineWidth(0.5)
+        c.line(cxc+10, CB+6+card_h-30, cxc+card_w-10, CB+6+card_h-30)
+        c.setFont(KR, 9)
+        c.setFillColor(WHITE)
+        py = CB+6+card_h-46
+        for ln in body.split('\n'):
+            c.drawString(cxc+10, py, ln)
+            py -= 12
+        c.setFont(KR, 12)
+        c.setFillColor(GOLD2)
+        c.drawString(cxc+10, CB+22, amt)
+        c.setFont(KR, 8)
+        c.setFillColor(LBLUE)
+        c.drawString(cxc+10, CB+10, kind)
 
     # 보정 표시
     c.setFont(KR, 8)
     c.setFillColor(MID)
-    c.drawString(MX, CB+8, '* 본 보증은 운영·수입결제 중심이며, 제조업 추가는 단계적 시범 투자 — 운영자금 용도에 부합. 본격 양산은 별도 후속 자금 확보 후 추진')
-    c.drawRightString(SW-MX, CB-2, '* 비율은 기본 예시 — 회사 측 정확한 사업계획에 따라 조정 [회사 기재]')
+    c.drawString(MX, CB-6, '* 분배 비율 30·40·30은 예시 — 회사 측 사업계획 확정 후 보정 [회사 기재]')
 
 
 def p7(c):
-    """7페이지 — 매출·재무 추이 및 전망"""
-    hdr(c, '매출 · 재무 추이 및 전망', 7)
+    """7페이지 — 매출 전망·1년 20억 근거"""
+    hdr(c, '매출 전망 · 20억 근거', 7)
     y = CT
 
     # 상단 KPI
     kw = (CW-16)//3
-    kh = 80
-    kpi(c, MX,          y, kw, kh, '2025 매출 실적', '8.0억',  '21년 안정 영업', NAVY,  LBLUE, GOLD2)
-    kpi(c, MX+kw+8,     y, kw, kh, '2027 매출 목표', '11.0억', '제조업 효과 반영', BLUE, LBLUE, GOLD2)
-    kpi(c, MX+(kw+8)*2, y, kw, kh, '3년 누적 성장률', '+50%',   '연평균 +14.5%',  TEAL, LBLUE, GOLD2)
+    kh = 68
+    kpi(c, MX,          y, kw, kh, '2025 매출', '8.6억',  '흑자전환 입증', NAVY,  LBLUE, GOLD2)
+    kpi(c, MX+kw+8,     y, kw, kh, '2026 목표', '20억',   '기본 시나리오', GREEN, LBLUE, GOLD2)
+    kpi(c, MX+(kw+8)*2, y, kw, kh, '성장 배수', 'x 2.3',  '디지털+자체브랜드', BLUE,  LBLUE, GOLD2)
     y -= kh + 14
 
-    # 매출 추이 표
-    sec(c, MX, y, '매출 추이 및 전망')
-    y -= 30
+    # 분기별 매출 전망 표
+    sec(c, MX, y, '2026 분기별 매출 전망')
+    y -= 28
     rows = [
-        ('2023 실적', '6.5억 원',  '—',     '수입유통 기반 안정', '[추정]'),
-        ('2024 실적', '7.2억 원',  '+10.8%', '거래선 확대',        '[추정]'),
-        ('2025 실적', '8.0억 원',  '+11.1%', '다품목 포트폴리오',  '확정'),
-        ('2026 목표', '9.5억 원',  '+18.8%', '수입유통 9.0억 + 제조 시제품 0.5억', '계획'),
-        ('2027 목표', '11.0억 원', '+15.8%', '수입유통 9.5억 + 제조 1.5억 (본격화)', '계획'),
-        ('2028 목표', '12.0억 원', '+9.1%',  '종합 무역·제조 기업 도약', '계획'),
+        ('1Q (확정)',  '2.0억',  '기존 거래처 + 신규',                  '진행중'),
+        ('2Q',         '4.0억',  'K-connect hub 가동 + 신규 거래선',     '계획'),
+        ('3Q',         '6.0억',  'K-beauty4U B2B 편집샵 본격 가동',      '계획'),
+        ('4Q',         '8.0억',  '자체 브랜드 출시 + 미국 진출',          '계획'),
+        ('연 합계',     '20.0억', '기본 시나리오',                       '목표'),
     ]
-    tbl(c, MX, y, ['연도', '매출액', '증감률', '비고', '구분'],
-        rows, [100, 130, 90, CW-460, 140], rh=24, hh=26, highlight_last=True)
+    tbl(c, MX, y, ['분기', '매출 전망', '동력', '구분'],
+        rows, [110, 130, CW-380, 140], rh=22, hh=24, highlight_last=True)
+    y -= 22*5 + 24 + 14
 
-    # 하단 안내
-    c.setFillColor(LGRAY)
-    c.roundRect(MX, CB, CW, 20, 3, fill=1, stroke=0)
-    c.setFont(KR, 9)
-    c.setFillColor(MID)
-    c.drawString(MX+10, CB+6,
-        '* 2023~2024 실적 및 2026~2028 전망은 추정치 — 회사 측 엑셀 원본 자료 기반 보정 필요')
+    # 좌측: 채널별 분해 / 우측: 시나리오
+    lw = CW*0.5
+    sec(c, MX, y, '채널별 매출 분해 (2026)')
+    cy = y - 28
+    channels = [
+        ('유럽 프랜차이즈·대형마트 (기존)', 0.60, '약 12억', NAVY),
+        ('신규 미국 온라인·인플루언서',     0.25, '약 5억',  BLUE),
+        ('자체 브랜드',                    0.15, '약 3억',  TEAL),
+    ]
+    for i, (lbl, pct, val, col) in enumerate(channels):
+        iy = cy - i*30
+        c.setFont(KR, 10)
+        c.setFillColor(DGRAY)
+        c.drawString(MX, iy-3, lbl)
+        c.setFillColor(LGRAY)
+        c.roundRect(MX, iy-22, lw-90, 12, 6, fill=1, stroke=0)
+        c.setFillColor(col)
+        c.roundRect(MX, iy-22, (lw-90)*pct, 12, 6, fill=1, stroke=0)
+        c.setFont(KR, 10)
+        c.setFillColor(NAVY)
+        c.drawString(MX+lw-86, iy-19, val)
+
+    rx = MX + lw + 16
+    rw = CW - lw - 16
+    ry = y
+    sec(c, rx, ry, '시나리오 분석')
+    ry -= 28
+    scenarios = [
+        ('보수', '15억', '기존 채널 + 디지털 일부',     ORANGE),
+        ('기본', '20억', '계획대로 달성',              GREEN),
+        ('낙관', '25억', '자체 브랜드·미국 조기 성공', BLUE),
+    ]
+    for i, (lbl, val, sub, col) in enumerate(scenarios):
+        iy = ry - i*30
+        c.setFillColor(col)
+        c.roundRect(rx, iy-26, rw, 26, 4, fill=1, stroke=0)
+        c.setFont(KR, 11)
+        c.setFillColor(GOLD2)
+        c.drawString(rx+12, iy-15, lbl)
+        c.setFont(KR, 13)
+        c.setFillColor(WHITE)
+        c.drawString(rx+62, iy-15, val)
+        c.setFont(KR, 9)
+        c.setFillColor(LBLUE)
+        c.drawString(rx+130, iy-15, sub)
 
 
 def p8(c):
@@ -789,10 +877,10 @@ def p8(c):
     # 상단 메시지
     c.setFillColor(GOLD)
     c.rect(MX, y-32, CW, 32, fill=1, stroke=0)
-    c.setFont(KR, 14)
+    c.setFont(KR, 13)
     c.setFillColor(NAVY2)
     c.drawCentredString(SW/2, y-20,
-        '21년 안정 고용 + 신규 채용 2명 = 보증재단 일자리 창출 가산점 항목 충족')
+        '1인 기업 → 6개월 이내 1~2명 채용  |  청년·여성 우대 가산점 다수 적용')
     y -= 46
 
     # 신규 채용 카드 2개
@@ -800,19 +888,19 @@ def p8(c):
     y -= 30
 
     new_hires = [
-        ('① 제조·품질관리 1명', NAVY,
-         '직무: 신규 제조사업 품질관리·제조 공정 관리',
+        ('① 디지털 마케팅', NAVY,
+         '직무: K-connect hub · K-beauty4U 운영',
          '시점: 2026년 Q2 ~ Q3',
-         '대상: 청년/경력자 (보증재단 우대)',
-         '연봉: 약 3,800만 원 (4대보험 포함)'),
-        ('② 영업·해외협력 1명', BLUE,
-         '직무: 유럽 거래선 영업·신규 파트너 발굴',
+         '대상: 청년/여성 (보증재단 우대)',
+         '기대 효과: 디지털 채널 매출 견인'),
+        ('② 해외 영업', BLUE,
+         '직무: 유럽·미국 거래선 관리·신규 파트너 발굴',
          '시점: 2026년 Q3 ~ Q4',
-         '대상: 청년/여성/경력자 (보증재단 우대)',
-         '연봉: 약 3,500만 원 (4대보험 포함)'),
+         '대상: 청년/경력자 (보증재단 우대)',
+         '기대 효과: 미국 진출·자체 브랜드 채널 확보'),
     ]
     cw_h = (CW-12)//2
-    ch_h = 130
+    ch_h = 124
     for i, (t, bg, l1, l2, l3, l4) in enumerate(new_hires):
         cx = MX + i*(cw_h+12)
         c.setFillColor(bg)
@@ -833,16 +921,16 @@ def p8(c):
             py -= 17
     y -= ch_h + 14
 
-    # 하단: 보증재단 우대 가점 안내
+    # 하단: 보증재단 우대 가점 항목
     sec(c, MX, y, '보증재단 우대 가점 항목')
     y -= 28
 
     pts = [
         (GREEN,  '청년 채용 (만 39세 이하)'),
         (BLUE,   '여성 채용'),
-        (TEAL,   '중장년 채용 (만 50세 이상)'),
         (GOLD,   '신규 일자리 창출 (보증한도 우대)'),
-        (ROSE,   '21년 장기 고용 안정 기업'),
+        (ROSE,   '청년·여성 창업기업'),
+        (TEAL,   '수출 B2B 기업'),
     ]
     bx = MX
     for col, t in pts:
@@ -850,7 +938,7 @@ def p8(c):
         c.setFillColor(col)
         c.roundRect(bx, y-22, pw, 22, 11, fill=1, stroke=0)
         c.setFont(KR, 10)
-        c.setFillColor(WHITE)
+        c.setFillColor(WHITE if col != GOLD else NAVY2)
         c.drawCentredString(bx+pw/2, y-15, t)
         bx += pw + 8
 
@@ -861,26 +949,26 @@ def p9(c):
     y = CT
 
     risks = [
-        ('① 환율 리스크 (EUR/KRW 변동)', ROSE, NAVY,
-         ['선물환·통화옵션 헷지 도입',
-          '결제 통화·시점 분산',
+        ('① EUR/USD 환율 리스크', ROSE, NAVY,
+         ['결제 통화·시점 분산 (EUR/USD 혼합 결제)',
           '거래선과 가격 조정 조항 협의',
-          '21년 거래 노하우로 환율 사이클 대응']),
-        ('② 글로벌 공급·물류 리스크', ORANGE, NAVY,
-         ['3개국 거래선 분산 — 단일 공급 의존도 낮음',
-          '주요 품목별 복수 거래선 보유',
-          '재고 안전수준 운영 (3~4개월분)',
-          'L/C 보험·운송 보험 가입']),
-        ('③ 경쟁사 직수입 증가', GOLD, NAVY,
-         ['21년 누적 신뢰자산 — 거래선 독점성',
-          '제조업 추가로 차별화 (자체 브랜드)',
-          '다품목 포트폴리오로 경쟁 분산',
-          '프리미엄·소량 다품종 전략 강화']),
-        ('④ 제조업 진입 초기 리스크', TEAL, NAVY,
-         ['단계적 투자 (전체 자금의 20%만 우선 투입)',
-          '시제품 → 시장 테스트 → 본격 양산',
-          'OEM/위탁 우선 검토 — 자가 설비 부담 최소화',
-          '실패 시 수입유통 기존 매출 유지']),
+          '단가 마진 버퍼 확보 (Brand Curation 마진)',
+          '환율 사이클 대응 — 7년 사업 경험']),
+        ('② K-뷰티 경쟁 심화', ORANGE, NAVY,
+         ['Brand Curation 차별화 — 단순 가격 경쟁 회피',
+          '4개 언어 사이트로 진입장벽 차별화',
+          '자체 브랜드 자산화로 장기 차별화',
+          'EMEA 언어 역량 (프랑스어·아랍어 등)']),
+        ('③ 디지털 마케팅 효과 불확실', GOLD, NAVY,
+         ['단계적 투자 — 시범 운영 → 효과 검증 → 확대',
+          '인플루언서 협업 검증 후 본격화',
+          '매출 채널 다변화 (B2B + 자체몰)',
+          '기존 거래처 매출 안정성 유지']),
+        ('④ 자체 브랜드 진입 리스크', TEAL, NAVY,
+         ['OEM 우선 검토 — 자가 설비 부담 최소화',
+          '시제품 → 시장 테스트 → 본격 양산 단계',
+          '실패 시에도 수입유통 기존 매출 유지',
+          '단계적 자금 투입 (전체 30% 우선)']),
     ]
     cw_r = (CW-12)//2
     ch_r = (CT - CB - 6)//2
@@ -914,30 +1002,29 @@ def p9(c):
 
 
 def p10(c):
-    """10페이지 — 자금 상환 계획"""
-    hdr(c, '자금 상환 계획', 10)
+    """10페이지 — 자금 조달 · 상환 계획"""
+    hdr(c, '자금 조달 · 상환 계획', 10)
     y = CT
 
-    # 상단 상환 가정
+    # 상단 상환 가정 표
     sec(c, MX, y, '상환 가정 및 부담 계산')
-    y -= 30
+    y -= 28
 
     rows = [
         ('보증액',           '150,000,000원',  '신용보증재단 보증한도'),
         ('대출금리 (가정)',  '연 4.0%',        '협력은행 우대금리 [추정]'),
         ('상환기간',         '5년 (60개월)',   '거치 6개월 + 분할상환 4.5년 [협의]'),
         ('보증료 (연)',       '약 1,200,000원', '보증액 × 0.8% (지역신보 표준)'),
-        ('월 이자(거치기간)', '500,000원',     '150,000,000 × 4% ÷ 12'),
-        ('월 원리금(분할상환)','3,580,000원',  '원금 분할 + 이자 합계 [추정]'),
-        ('연간 상환 부담',    '약 43,000,000원','상환 + 보증료 합산 [추정]'),
+        ('월 원리금',         '약 3,580,000원', '거치 후 분할상환 [추정]'),
+        ('연 상환 부담',       '약 43,000,000원','원리금 + 보증료 [추정]'),
     ]
     tbl(c, MX, y, ['항목', '금액 / 조건', '산출 근거'],
         rows, [180, 200, CW-380], rh=22, hh=24, lcols={2})
-    y -= 22*7 + 24 + 14
+    y -= 22*6 + 24 + 14
 
     # DSCR 분석
-    sec(c, MX, y, 'DSCR (부채상환능력) 분석')
-    y -= 30
+    sec(c, MX, y, 'DSCR (부채상환능력) 분석 — 보수적 추정')
+    y -= 28
 
     # 좌: 수치 박스
     lw = CW*0.42
@@ -947,16 +1034,16 @@ def p10(c):
     c.roundRect(MX, y-5, lw, 5, 2, fill=1, stroke=0)
     c.setFont(KR, 11)
     c.setFillColor(LBLUE)
-    c.drawCentredString(MX+lw/2, y-22, 'DSCR 추정')
-    c.setFont(KR, 36)
+    c.drawCentredString(MX+lw/2, y-22, 'DSCR 추정 (보수)')
+    c.setFont(KR, 32)
     c.setFillColor(GOLD2)
-    c.drawCentredString(MX+lw/2, y-58, '1.6 배')
+    c.drawCentredString(MX+lw/2, y-56, '1.6 ~ 2.0 배')
     c.setFont(KR, 9)
     c.setFillColor(LBLUE)
-    c.drawCentredString(MX+lw/2, y-76, '(영업이익 - 신규인건비 - 보증료) ÷')
-    c.drawCentredString(MX+lw/2, y-87, '연 상환부담 약 4,300만 [보수적]')
+    c.drawCentredString(MX+lw/2, y-74, '(2025 영업이익 - 신규인건비 - 보증료) ÷')
+    c.drawCentredString(MX+lw/2, y-85, '연 상환부담 약 4,300만 [보수 가정]')
 
-    # 우: 시나리오
+    # 우: 청정 신용 + 비상 시나리오
     rx = MX + lw + 16
     rw = CW - lw - 16
     c.setFillColor(LGRAY)
@@ -965,12 +1052,12 @@ def p10(c):
     c.roundRect(rx, y-5, rw, 5, 2, fill=1, stroke=0)
     c.setFont(KR, 12)
     c.setFillColor(NAVY)
-    c.drawString(rx+14, y-22, '비상 상환 시나리오')
+    c.drawString(rx+14, y-22, '청정 신용 + 비상 상환 시나리오')
     scenarios = [
-        '• 수입유통 기존 매출 8억 — 안정 현금흐름 유지',
-        '• 제조업 진입 지연 시에도 기존 사업 매출 영향 없음',
-        '• 21년 거래선 신뢰 — 매출 급락 가능성 낮음',
-        '• 재고 자산·매출채권 담보 여력 보유',
+        '• 무차입 (법인 차입 0, 정책자금 기대출 0)',
+        '• 무체납·무연체 (국세·지방세·4대보험)',
+        '• 2025년 8.6억 매출 — 안정 현금흐름 확보',
+        '• 수출 매출채권 담보 여력 + 재고 자산',
     ]
     py = y-40
     c.setFont(KR, 10)
@@ -978,15 +1065,15 @@ def p10(c):
     for s in scenarios:
         c.drawString(rx+14, py, s)
         py -= 14
-    y -= 90 + 14
+    y -= 90 + 12
 
     # 하단 결론
     c.setFillColor(GOLD)
     c.roundRect(MX, CB, CW, 26, 4, fill=1, stroke=0)
-    c.setFont(KR, 12)
+    c.setFont(KR, 11)
     c.setFillColor(NAVY2)
     c.drawCentredString(SW/2, CB+8,
-        'DSCR 1.6배 (보수적) — 인건비·보증료 차감 후 상환 여력 확보  |  21년 거래선 신뢰 + 재고·매출채권 담보 여력')
+        'DSCR 1.6~2.0배 (보수)  |  무차입 청정 신용 + 무체납  |  수출 매출채권 담보 여력 → 신용 적격성 우수')
 
 
 def p11(c):
@@ -998,30 +1085,31 @@ def p11(c):
     c.rect(0, 0, SW, 6, fill=1, stroke=0)
 
     # 상단 비전 메시지
-    c.setFont(KR, 14)
+    c.setFont(KR, 13)
     c.setFillColor(GOLD2)
-    c.drawCentredString(SW/2, SH-50, 'Vision 2028')
-    c.setFont(KR, 24)
+    c.drawCentredString(SW/2, SH-46, 'Vision 2026 ~ 2027')
+    c.setFont(KR, 20)
     c.setFillColor(WHITE)
-    c.drawCentredString(SW/2, SH-90, '21년 안정 영업 + 신규 제조 = 종합 무역·제조 기업 도약')
+    c.drawCentredString(SW/2, SH-78,
+        '2025 흑자전환 + 1.5억 보증  →  2026 매출 20억 + 디지털 인프라 + 자체 브랜드')
 
     c.setStrokeColor(GOLD)
     c.setLineWidth(1.5)
-    c.line(SW/2-220, SH-110, SW/2+220, SH-110)
+    c.line(SW/2-260, SH-94, SW/2+260, SH-94)
 
     # 핵심 요약 3박스
-    cy = SH-160
+    cy = SH-130
     bw = (SW - 2*MX - 24) // 3
     bh = 110
     summary = [
         ('보증 활용', '1.5억 원',
-         '신용보증재단 보증\n→ 협력은행 융자\n→ 운영·결제·제조',
+         'K-connect hub\n+ K-beauty4U\n+ 자체 브랜드',
          BLUE),
-        ('매출 도약', '8억 → 12억',
-         '2025 → 2028\n+50% 성장\n연평균 +14.5%',
+        ('매출 도약', '8.6 → 20억',
+         '2025 → 2026\n2.3배 성장\n흑자전환 입증',
          TEAL),
-        ('일자리 창출', '+ 2명',
-         '제조·품질관리 1명\n영업·해외협력 1명\n청년·여성 우대',
+        ('일자리 창출', '+1~2명',
+         '디지털 마케팅 1명\n해외 영업 1명\n청년·여성 우대',
          ROSE),
     ]
     for i, (lbl, val, body, bg) in enumerate(summary):
@@ -1033,9 +1121,9 @@ def p11(c):
         c.setFont(KR, 11)
         c.setFillColor(LBLUE)
         c.drawCentredString(bx+bw/2, cy-22, lbl)
-        c.setFont(KR, 24)
+        c.setFont(KR, 22)
         c.setFillColor(GOLD2)
-        c.drawCentredString(bx+bw/2, cy-52, val)
+        c.drawCentredString(bx+bw/2, cy-50, val)
         c.setFont(KR, 10)
         c.setFillColor(WHITE)
         py = cy-72
@@ -1043,32 +1131,57 @@ def p11(c):
             c.drawCentredString(bx+bw/2, py, ln)
             py -= 12
 
+    # 5대 강점 미니 배지
+    by = cy - bh - 24
+    c.setFont(KR, 12)
+    c.setFillColor(GOLD2)
+    c.drawCentredString(SW/2, by, '5대 강점')
+    by -= 22
+    badges_data = [
+        ('매출 7.5배 급성장', GREEN),
+        ('청년·여성 창업', PINK),
+        ('청정 신용', BLUE),
+        ('수출 B2B 입증', TEAL),
+        ('디지털+자체브랜드', GOLD),
+    ]
+    total_w = sum(c.stringWidth(t, KR, 10)+22 for t, _ in badges_data) + (len(badges_data)-1)*6
+    bx = (SW - total_w) / 2
+    for t, col in badges_data:
+        pw = c.stringWidth(t, KR, 10) + 22
+        c.setFillColor(col)
+        c.roundRect(bx, by-20, pw, 20, 10, fill=1, stroke=0)
+        c.setFont(KR, 10)
+        c.setFillColor(WHITE if col != GOLD else NAVY2)
+        c.drawCentredString(bx+pw/2, by-14, t)
+        bx += pw + 6
+
     # 마무리 문구
-    c.setFont(KR, 36)
+    c.setFont(KR, 32)
     c.setFillColor(WHITE)
-    c.drawCentredString(SW/2, 150, 'THANK YOU.')
+    c.drawCentredString(SW/2, 130, 'THANK YOU.')
     c.setStrokeColor(GOLD)
     c.setLineWidth(1)
-    c.line(SW/2-120, 130, SW/2+120, 130)
+    c.line(SW/2-120, 112, SW/2+120, 112)
 
-    c.setFont(KR, 14)
+    c.setFont(KR, 13)
     c.setFillColor(GOLD2)
-    c.drawCentredString(SW/2, 105, COMPANY)
-    c.setFont(KR, 10)
+    c.drawCentredString(SW/2, 92, COMPANY)
+    c.setFont(KR, 9)
     c.setFillColor(LBLUE)
-    c.drawCentredString(SW/2, 88, COMPANY_EN)
-    c.setFont(KR, 10)
+    c.drawCentredString(SW/2, 78, COMPANY_EN)
+    c.setFont(KR, 9)
     c.setFillColor(MGRAY)
-    c.drawCentredString(SW/2, 68, '대표이사 [회사 기재]   |   T. [회사 기재]   |   E. [회사 기재]')
+    c.drawCentredString(SW/2, 60, '대표이사 [회사 기재]   |   T. [회사 기재]   |   E. [회사 기재]')
+    c.drawCentredString(SW/2, 48, '서울시 강서구 마곡 중앙1로 10. 802호')
 
     c.setFont(KR, 9)
     c.setFillColor(GOLD2)
-    c.drawCentredString(SW/2, 44, BRAND_TAG)
+    c.drawCentredString(SW/2, 30, BRAND_TAG)
 
     c.setFont(KR, 8)
     c.setFillColor(MID)
-    c.drawCentredString(SW/2, 16,
-        '본 사업계획서는 회사 측 보정 자료(재무제표 · 매출 분기 · 대표이력) 반영 후 최종본으로 완성됩니다.')
+    c.drawCentredString(SW/2, 14,
+        '본 사업계획서는 회사 측 보정 자료(NICE 등급 · 재무제표 분기 · 대표이력) 반영 후 최종본으로 완성됩니다.')
 
 
 # ══════════════════════════════════════════════════════════════════════
@@ -1078,6 +1191,7 @@ def build():
     cv.setTitle(f'{COMPANY} 정책자금 사업계획서')
     cv.setAuthor('히어컴퍼니 (HearCompany) Corporate Consulting')
     cv.setSubject('신용보증재단 보증신청용')
+    cv.setKeywords('정책자금, 신용보증재단, 보증, K-뷰티, 수출, Brand Curation')
     for fn in [p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11]:
         fn(cv)
         cv.showPage()
