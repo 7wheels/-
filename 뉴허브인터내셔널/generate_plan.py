@@ -176,8 +176,9 @@ def page_cover(c):
     c.setFillColor(WHITE)
     c.setFont(KR, 10)
     info_y = 80
-    c.drawRightString(SW - MX, info_y + 36, '제출처  |  신용보증재단')
-    c.drawRightString(SW - MX, info_y + 22, '연락처  |  T. [회사 기재]   E. [회사 기재]')
+    c.drawRightString(SW - MX, info_y + 50, '제출처  |  신용보증재단')
+    c.drawRightString(SW - MX, info_y + 36, '연락처  |  T. 010-4925-1705   E. [회사 기재]')
+    c.drawRightString(SW - MX, info_y + 22, '사업자등록  |  306-81-38572')
     c.drawRightString(SW - MX, info_y + 8,  '주  소  |  서울시 강서구 마곡 중앙1로 10. 802호')
     c.setFillColor(GOLD_LT)
     c.drawRightString(SW - MX, info_y - 8,  f'작성일  |  {DATE_STR}')
@@ -371,7 +372,7 @@ def page_strengths(c):
     c.drawString(MX + 20, cu_y - 22, 'COMPETITIVE EDGE')
     c.setFillColor(WHITE)
     c.setFont(KRB, 14)
-    c.drawString(MX + 20, cu_y - 42, '청년·여성 창업기업 + 매출 7.5배 급성장 + 무차입 청정 신용 — 보증재단 우대 가산 3중 충족')
+    c.drawString(MX + 20, cu_y - 42, '여성 창업기업 + 매출 7.5배 급성장 + NICE 880점 우수 신용 — 보증재단 우대 가산 3중 충족')
 
     c.showPage()
 
@@ -526,7 +527,8 @@ def page_ceo(c):
     c.drawString(lx + 24, ly + lh - 142, '[대표자명] 대표')
     c.setFillColor(GOLD_LT)
     c.setFont(KR, 10)
-    c.drawString(lx + 24, ly + lh - 158, '※ 회사 기재')
+    c.drawString(lx + 24, ly + lh - 158, '여 · 1973년 10월생 · 주식 80%')
+    c.drawString(lx + 24, ly + lh - 173, '사업자등록 306-81-38572')
 
     # 강점 배지
     badge_y = ly + 80
@@ -536,11 +538,11 @@ def page_ceo(c):
     c.roundRect(lx + 24, badge_y, lw - 48, 28, 6, stroke=1, fill=1)
     c.setFillColor(NAVY)
     c.setFont(KRB, 12)
-    c.drawCentredString(lx + lw / 2, badge_y + 9, '여성 청년 창업기업 대표')
+    c.drawCentredString(lx + lw / 2, badge_y + 9, '여성 창업기업 · NICE 880점')
 
     c.setFillColor(GOLD_LT)
     c.setFont(KR, 10)
-    c.drawCentredString(lx + lw / 2, badge_y - 16, '보증재단 우대 가산점 · 주식 80% 보유')
+    c.drawCentredString(lx + lw / 2, badge_y - 16, '보증재단 우대 가산점 · 우수 신용 1등급')
 
     # 우측 — 경력·학력·자격
     rx = lx + lw + 18
@@ -591,6 +593,18 @@ def page_ceo(c):
     c.setFillColor(BLACK)
     c.setFont(KR, 11)
     c.drawString(rx, sec3_top - 26, '· 프랑스어 통역 가이드')
+
+    # 신용·재무 요약 박스 (NICE·영업이익)
+    fin_top = sec3_top - 56
+    c.setFillColor(NAVY)
+    c.setFont(KRB, 14)
+    c.drawString(rx, fin_top, '신용 · 재무 요약 (2025 결산)')
+    c.setStrokeColor(GOLD)
+    c.line(rx, fin_top - 6, rx + 200, fin_top - 6)
+    c.setFillColor(BLACK)
+    c.setFont(KR, 11)
+    c.drawString(rx, fin_top - 26, '· NICE 신용평점 880점 (1등급) · 무체납 · 무차입에 가까움')
+    c.drawString(rx, fin_top - 42, '· 2025 매출 8.6억 / 영업이익 6,000만 / 당기순이익 4,500만')
 
     c.showPage()
 
@@ -739,8 +753,8 @@ def page_sales_plan_1(c):
 
     models = [
         ('1', '유럽 B2B 직수출 (기존 안정)',
-         '거래당 평균 1,000만 원 × 월 7건',
-         '= 월 7,000만 원'),
+         '거래처 8곳 × 연 평균 거래액 1억 원',
+         '= 연 8억 원 (2025 8.6억 실적)'),
         ('2', 'K-beauty4U 온라인 B2B 편집샵 (신규·3Q)',
          '가입 바이어 100개사 × 월 평균 50만 원',
          '= 월 5,000만 원'),
@@ -875,12 +889,12 @@ def page_sales_plan_2(c):
             'no': '1', 'title': '유럽 B2B 직수출',
             'subtitle': '(기존 사업 안정)',
             'tag': 'EXISTING',
-            'calc1': '거래당 평균 1,000만 원',
-            'calc2': '× 월 7건',
-            'calc3': '= 월 7,000만 원',
-            'calc4': '× 12개월',
-            'big':   '연 8.4억 원',
-            'note':  '거래선 수·거래액 [회사 기재] 보정',
+            'calc1': '거래처 8곳 (2025 실적 기준)',
+            'calc2': '× 연 평균 거래액 1억 원',
+            'calc3': '= 연 8억 원 (2025 8.6억)',
+            'calc4': '+ 신규 거래선 확보',
+            'big':   '연 8 ~ 10억 원',
+            'note':  '2025 영업이익 6,000만 / 당기순이익 4,500만',
         },
         {
             'no': '2', 'title': 'K-beauty4U B2B 편집샵',
@@ -1190,10 +1204,10 @@ def page_closing(c):
 
     c.setFillColor(GOLD_LT)
     c.setFont(KR, 11)
-    c.drawString(MX + 16, SH - 308, 'T. [회사 기재]    E. [회사 기재]')
+    c.drawString(MX + 16, SH - 308, 'T. 010-4925-1705    사업자등록 306-81-38572')
 
     # 5대 강점 배지
-    badges = ['청년·여성 창업', '매출 7.5배 급성장', '무차입 청정 신용',
+    badges = ['여성 창업기업', '매출 7.5배 급성장', 'NICE 880점 우수신용',
               'Brand Curation 차별화', '디지털 인프라 사용처']
     by = 200
     bx_cur = MX + 16
