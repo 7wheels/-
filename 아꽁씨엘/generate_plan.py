@@ -321,9 +321,9 @@ def page_strengths(c):
         ('②', '기업부설연구소 + 벤처(혁신성장)',
          'KOITA 인정 기업부설연구소 · 벤처확인기관 평가 통과',
          '기보 기술평가등급(T) 상향 근거 · 우대 3중 충족'),
-        ('③', '유럽 원단 독점 유통 채널',
+        ('③', '유럽 원단 파트너 협의 진행',
          'Central Saint Martins 동기 네트워크 기반',
-         '프랑스·이탈리아·영국 유명 원단 독점 국내 유통권'),
+         '프·이·영 파트너 3개사와 국내 유통 협의 (2026 상반기 MOU 목표)'),
         ('④', 'ESG · 순환경제 스토리',
          '명품 브랜드 순환경제 정책 부합 · 지속가능 패션 트렌드',
          '지속가능 소재 프리미엄 단가 확보 가능'),
@@ -399,7 +399,7 @@ def page_achievements(c):
 
     c.setFillColor(NAVY)
     c.setFont(KRB, 14)
-    c.drawString(chart_x + 16, chart_y + chart_h - 28, '매출 추이 — 2년간 약 16.7배 급성장')
+    c.drawString(chart_x + 16, chart_y + chart_h - 28, '매출 추이 — 2024→2025 약 4.7배 · 2026 상반기 진척률 [회사 기재]')
     c.setFillColor(GRAY)
     c.setFont(KR, 9)
     c.drawString(chart_x + 16, chart_y + chart_h - 44, '단위: 백만 원')
@@ -605,8 +605,8 @@ def page_ceo(c):
     c.line(rx, fin_top - 6, rx + 200, fin_top - 6)
     c.setFillColor(BLACK)
     c.setFont(KR, 11)
-    c.drawString(rx, fin_top - 26, '· NICE 신용평점 880점 (1등급) · 차입금 0원 · 무체납 · 특허 2건 출원')
-    c.drawString(rx, fin_top - 42, '· 2025 매출 7,000만 / 영업손실 1.3억 (R&D 투자 단계 — 매출 대비 R&D 지출 100%+)')
+    c.drawString(rx, fin_top - 26, '· NICE 880점(1등급) · 차입금 0원 · 무체납 · 특허 2건 출원')
+    c.drawString(rx, fin_top - 42, '· 2025 매출 7,000만 · R&D 집중 투자기 (매출 대비 R&D 100%+ · 영업손실 감내)')
 
     c.showPage()
 
@@ -1020,12 +1020,12 @@ def page_evidence(c):
     evidences = [
         ('ESG·지속가능 패션 시장 성장세',
          '명품 브랜드 순환경제 정책 강화 (버버리·구찌·에르메스 등)'),
-        ('2025 매출 7,000만 = 월평균 583만 원',
-         '안정 성장 궤도 — 2년간 16.7배 급성장'),
+        ('2025 매출 7,000만 · 창업 2년차 시장 진입기',
+         'R&D 투자로 영업손실 병행 감내 (특허 2건 확보 근거)'),
         ('특허 2건 기반 원단 프리미엄 단가',
          '재생 원단 · 업사이클 복합시트'),
-        ('유럽 원단 독점 유통 채널',
-         '진입 장벽 확보 + 마진 안정'),
+        ('유럽 원단 파트너 협의 진행',
+         '진입 장벽 확보 예정 (MOU·견적서 단계)'),
     ]
     ey = ly - 22
     for t, d in evidences:
@@ -1239,7 +1239,7 @@ def page_closing(c):
     c.setFillColor(WHITE)
     c.setFont(KR, 9)
     c.drawString(MX + 28, dis_y - 34,
-                 '본 사업계획서는 회사 측 보정 자료(NICE 등급·재무제표·대표 이력) 반영 후 최종본으로 완성됩니다.')
+                 '본 계획서는 초안이며 회사 확정 자료 반영 후 기보 심사 접수용 최종본으로 전환됩니다.')
     c.drawString(MX + 28, dis_y - 48,
                  '매출 전망은 회사 자체 추정이며 기술보증기금 심사 결과를 보장하지 않습니다.')
 
