@@ -179,8 +179,8 @@ def page_cover(c):
     info_y = 80
     c.drawRightString(SW - MX, info_y + 50, '제출처  |  신용보증재단')
     c.drawRightString(SW - MX, info_y + 36, '연락처  |  T. [회사 기재]   E. [회사 기재]')
-    c.drawRightString(SW - MX, info_y + 22, '사업자등록  |  [회사 기재]')
-    c.drawRightString(SW - MX, info_y + 8,  '주  소  |  [회사 기재]')
+    c.drawRightString(SW - MX, info_y + 22, '사업자등록  |  758-88-02575')
+    c.drawRightString(SW - MX, info_y + 8,  '주  소  |  서울시 강남구 도산대로58길 12, 신관4층')
     c.setFillColor(GOLD_LT)
     c.drawRightString(SW - MX, info_y - 8,  f'작성일  |  {DATE_STR}')
 
@@ -493,11 +493,11 @@ def page_achievements(c):
     c.drawString(rx + 14, cl_y - 102, 'INSTITUTIONAL')
     c.setFillColor(BLACK)
     c.setFont(KR, 10)
-    c.drawString(rx + 14, cl_y - 118, '· 기업부설연구소 (KOITA 인정)')
-    c.drawString(rx + 14, cl_y - 134, '· 벤처확인서 (혁신성장유형)')
+    c.drawString(rx + 14, cl_y - 118, '· 기업부설연구소 (KOITA) · 벤처(혁신성장)')
+    c.drawString(rx + 14, cl_y - 134, '· 임직원 2명 (대표+연구원) · 직조설비 보유')
     c.setFillColor(GOLD)
     c.setFont(KR, 9)
-    c.drawString(rx + 14, cl_y - 160, '※ 특허 2건 출원 · 수출실적증명원 가능')
+    c.drawString(rx + 14, cl_y - 160, '※ 특허 2건 · NICE 880점 · 차입금 0원')
 
     c.showPage()
 
@@ -529,8 +529,8 @@ def page_ceo(c):
     c.drawString(lx + 24, ly + lh - 142, '여정민 대표')
     c.setFillColor(GOLD_LT)
     c.setFont(KR, 10)
-    c.drawString(lx + 24, ly + lh - 158, '여 · Founder & CEO')
-    c.drawString(lx + 24, ly + lh - 173, '생년월일 · 지분율 [회사 기재]')
+    c.drawString(lx + 24, ly + lh - 158, '여 · 1984년생 · Founder & CEO')
+    c.drawString(lx + 24, ly + lh - 173, '사업자등록 758-88-02575')
 
     # 강점 배지
     badge_y = ly + 80
@@ -540,11 +540,11 @@ def page_ceo(c):
     c.roundRect(lx + 24, badge_y, lw - 48, 28, 6, stroke=1, fill=1)
     c.setFillColor(NAVY)
     c.setFont(KRB, 12)
-    c.drawCentredString(lx + lw / 2, badge_y + 9, '여성 창업기업 · 세인트마틴 · 루이비통 우승자')
+    c.drawCentredString(lx + lw / 2, badge_y + 9, '여성 창업 · NICE 880점 · 세인트마틴 · 루이비통 우승')
 
     c.setFillColor(GOLD_LT)
     c.setFont(KR, 10)
-    c.drawCentredString(lx + lw / 2, badge_y - 16, '기보 우대 · 벤처(혁신성장) · 유럽 원단 인맥')
+    c.drawCentredString(lx + lw / 2, badge_y - 16, '기보 우대 3중 · 차입금 0원 · 무체납')
 
     # 우측 — 경력·학력·자격
     rx = lx + lw + 18
@@ -605,8 +605,8 @@ def page_ceo(c):
     c.line(rx, fin_top - 6, rx + 200, fin_top - 6)
     c.setFillColor(BLACK)
     c.setFont(KR, 11)
-    c.drawString(rx, fin_top - 26, '· 기업부설연구소 (KOITA) · 벤처인증(혁신성장유형) · 특허 2건 출원')
-    c.drawString(rx, fin_top - 42, '· 2024 1,500만 → 2025 7,000만 → 2026 예상 2.5억')
+    c.drawString(rx, fin_top - 26, '· NICE 신용평점 880점 (1등급) · 차입금 0원 · 무체납 · 특허 2건 출원')
+    c.drawString(rx, fin_top - 42, '· 2025 매출 7,000만 / 영업손실 1.3억 (R&D 투자 단계 — 매출 대비 R&D 지출 100%+)')
 
     c.showPage()
 
@@ -1050,11 +1050,11 @@ def page_evidence(c):
     c.line(rx, ly - 6, rx + 130, ly - 6)
 
     infras = [
-        ('여정민 대표', '세인트마틴 · 루이비통 컴피티션 우승 브랜딩'),
-        ('기업부설연구소', '특허 개발 · 재생 공정 고도화 조직'),
-        ('벤처인증(혁신성장유형)', '정책자금 · 투자 · 인력 우대'),
-        ('특허 2건 출원', '재생 분류·재조합 + 업사이클 복합시트'),
-        ('유럽 원단 파트너 인맥', '프·이·영 독점 채널 확보'),
+        ('여정민 대표', '세인트마틴 · 루이비통 컴피티션 우승 · 브랜딩·유럽 인맥'),
+        ('나기주 연구원', '기업부설연구소 (KOITA) 소속 · 특허 R&D 인력'),
+        ('직조설비 2,800만원 보유', '재생 원단 자체 직조·재조합 라인 (특허 1 구현)'),
+        ('벤처(혁신성장)·특허 2건', '기보 우대 3중 · 기술평가등급 상향 근거'),
+        ('유럽 원단 독점 유통', '프·이·영 세인트마틴 동기 네트워크'),
     ]
     iy = ly - 22
     for t, d in infras:
@@ -1206,12 +1206,12 @@ def page_closing(c):
 
     c.setFillColor(GOLD_LT)
     c.setFont(KR, 11)
-    c.drawString(MX + 16, SH - 308, 'T. [회사 기재]    E. [회사 기재]    사업자등록 [회사 기재]')
+    c.drawString(MX + 16, SH - 308, 'T. [회사 기재]    E. [회사 기재]    사업자등록 758-88-02575')
 
     # 5대 강점 배지
     badges = ['특허 2건 출원', '벤처(혁신성장)·기업부설연구소',
               '유럽 원단 독점 유통', '세인트마틴·루이비통 우승 대표',
-              'ESG 순환경제 원단']
+              'NICE 880점·차입금 0원', 'ESG 순환경제 원단']
     by = 200
     bx_cur = MX + 16
     for b in badges:
