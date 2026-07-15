@@ -399,16 +399,16 @@ def page_achievements(c):
 
     c.setFillColor(NAVY)
     c.setFont(KRB, 14)
-    c.drawString(chart_x + 16, chart_y + chart_h - 28, '매출 추이 — 2024→2025 약 4.7배 · 2026 상반기 진척률 [회사 기재]')
+    c.drawString(chart_x + 16, chart_y + chart_h - 28, '매출 추이 — 2024→2025 4.7배 · 2026 상반기 이미 5,000만(2025년 71%)')
     c.setFillColor(GRAY)
     c.setFont(KR, 9)
     c.drawString(chart_x + 16, chart_y + chart_h - 44, '단위: 백만 원')
 
     bars = [
         ('2024',        15,  '초기',       GRAY_LT),
-        ('2025',        70,  '성장',       GOLD),
-        ('2026 목표',   200, '기본 시나리오', NAVY_LT),
-        ('2026 공격',   250, '공격 시나리오', GREEN_OK),
+        ('2025',        70,  '성장',       GRAY),
+        ('2026 상반기', 50,  '5월 실적',    GOLD),
+        ('2026 목표',   250, '연간 목표',   NAVY_LT),
     ]
     max_val = 260
     plot_x = chart_x + 50
@@ -461,13 +461,13 @@ def page_achievements(c):
     c.drawString(rx + 14, y0 - 28, 'KEY PERFORMANCE')
     c.setFillColor(WHITE)
     c.setFont(KRB, 30)
-    c.drawString(rx + 14, y0 - 64, '16.7배')
+    c.drawString(rx + 14, y0 - 64, '18억')
     c.setFillColor(GOLD_LT)
     c.setFont(KR, 11)
-    c.drawString(rx + 14, y0 - 82, '2024 → 2026 예상 매출 급성장')
+    c.drawString(rx + 14, y0 - 82, '일본 업체 MOU 체결 (2026)')
     c.setFillColor(WHITE)
     c.setFont(KRB, 14)
-    c.drawString(rx + 14, y0 - 104, '특허 2건 출원 · 벤처(혁신성장)')
+    c.drawString(rx + 14, y0 - 104, '특허 2건 · 벤처(혁신성장) · 연구소')
 
     # 거래처 박스
     cl_y = y0 - 6 - 110 - 12
@@ -483,18 +483,20 @@ def page_achievements(c):
     c.line(rx + 14, cl_y - 28, rx + rw - 14, cl_y - 28)
     c.setFillColor(NAVY_LT)
     c.setFont(KR, 9)
-    c.drawString(rx + 14, cl_y - 44, 'CURRENT')
+    c.drawString(rx + 14, cl_y - 44, '해외 CONTRACT')
+    c.setFillColor(GOLD)
+    c.setFont(KRB, 11)
+    c.drawString(rx + 14, cl_y - 60, '· 일본 업체 18억 MOU 체결 (2026)')
     c.setFillColor(BLACK)
     c.setFont(KR, 10)
-    c.drawString(rx + 14, cl_y - 60, '· 유럽 원단 파트너 [프·이·영]')
-    c.drawString(rx + 14, cl_y - 76, '· 국내 지속가능 패션 브랜드')
+    c.drawString(rx + 14, cl_y - 76, '· 유럽 파트너 협의 진행 (프·이·영)')
     c.setFillColor(NAVY_LT)
     c.setFont(KR, 9)
     c.drawString(rx + 14, cl_y - 102, 'INSTITUTIONAL')
     c.setFillColor(BLACK)
     c.setFont(KR, 10)
     c.drawString(rx + 14, cl_y - 118, '· 기업부설연구소 (KOITA) · 벤처(혁신성장)')
-    c.drawString(rx + 14, cl_y - 134, '· 임직원 2명 (대표+연구원) · 직조설비 보유')
+    c.drawString(rx + 14, cl_y - 134, '· 임직원 4명 + 1명 채용 예정 · 재활용원단 제조설비')
     c.setFillColor(GOLD)
     c.setFont(KR, 9)
     c.drawString(rx + 14, cl_y - 160, '※ 특허 2건 · NICE 880점 · 차입금 0원')
@@ -605,8 +607,8 @@ def page_ceo(c):
     c.line(rx, fin_top - 6, rx + 200, fin_top - 6)
     c.setFillColor(BLACK)
     c.setFont(KR, 11)
-    c.drawString(rx, fin_top - 26, '· NICE 880점(1등급) · 차입금 0원 · 무체납 · 특허 2건 출원')
-    c.drawString(rx, fin_top - 42, '· 2025 매출 7,000만 · R&D 집중 투자기 (매출 대비 R&D 100%+ · 영업손실 감내)')
+    c.drawString(rx, fin_top - 26, '· NICE 880점(1등급) · 차입금 0원 · 무체납 · 특허 2건 · 일본 18억 MOU')
+    c.drawString(rx, fin_top - 42, '· 2025 매출 7,000만 → 2026 상반기 이미 5,000만 (2025년 71% 달성 · 성장 궤도)')
 
     c.showPage()
 
@@ -760,9 +762,9 @@ def page_sales_plan_1(c):
         ('2', '업사이클 복합시트 (신규·특허 2)',
          '시트당 30만원 × 월 30개 × 6개월(2Q~)',
          '= 반기 5,400만 원'),
-        ('3', '유럽 원단 독점 유통 (신규 채널)',
-         '도매 마진 20% × 월 3,000만원 × 6개월',
-         '= 반기 3,600만 원'),
+        ('3', '일본 18억 MOU (신규 확정)',
+         '일본 파트너 연간 실행 규모 확보',
+         '= 다년 계약 · 2026 하반기 매출 인식'),
     ]
     my = ly - 22
     for n, t, calc, result in models:
@@ -796,10 +798,10 @@ def page_sales_plan_1(c):
     c.line(rx, s_top - 6, rx + 100, s_top - 6)
 
     rows = [
-        ('2024',     '15,000,000원',  '초기'),
-        ('2025',     '70,000,000원',  '4.7배 증가'),
-        ('2026 1Q',  '[회사 기재]',    '진행'),
-        ('2026 목표', '250,000,000원', '3.6배 증가'),
+        ('2024',      '15,000,000원',  '초기'),
+        ('2025',      '70,000,000원',  '4.7배 증가'),
+        ('2026 상반기', '50,000,000원',  '2025년 71% 달성'),
+        ('2026 목표',  '250,000,000원', '연간 목표'),
     ]
     ry = s_top - 22
     for yr, amt, tag in rows:
@@ -910,15 +912,15 @@ def page_sales_plan_2(c):
             'note':  '국내 지속가능 패션 브랜드 3~5곳',
         },
         {
-            'no': '3', 'title': '유럽 원단 독점 유통',
-            'subtitle': '(신규 채널 확대)',
-            'tag': 'NEW',
-            'calc1': '도매 마진 20%',
-            'calc2': '× 월 도매 3,000만 원',
-            'calc3': '= 월 600만 원',
-            'calc4': '× 6개월',
-            'big':   '반기 3,600만 원',
-            'note':  '세인트마틴 동기 인맥 · 프·이·영',
+            'no': '3', 'title': '일본 18억 MOU',
+            'subtitle': '(신규 확정 · 다년 계약)',
+            'tag': 'CONTRACT',
+            'calc1': '일본 파트너 MOU 총액',
+            'calc2': '18억 원',
+            'calc3': '2026 하반기 매출 인식 시작',
+            'calc4': '유럽 파트너 협의 별도 진행',
+            'big':   'MOU 18억 원',
+            'note':  '연간 실행 규모·조건 [회사 기재]',
         },
     ]
     cw = (SW - MX * 2 - 24) / 3
@@ -1018,14 +1020,14 @@ def page_evidence(c):
     c.line(lx, ly - 6, lx + 130, ly - 6)
 
     evidences = [
+        ('일본 업체 18억 원 MOU 체결 확정',
+         '매출 대비 26배 규모 · 다년 확정 계약 (2026 하반기 매출 인식)'),
+        ('2026 상반기 매출 5,000만 달성',
+         '2025년 매출(7,000만)의 71% 이미 달성 · 성장 궤도 실증'),
         ('ESG·지속가능 패션 시장 성장세',
-         '명품 브랜드 순환경제 정책 강화 (버버리·구찌·에르메스 등)'),
-        ('2025 매출 7,000만 · 창업 2년차 시장 진입기',
-         'R&D 투자로 영업손실 병행 감내 (특허 2건 확보 근거)'),
+         '명품 브랜드 순환경제 정책 강화 · K-패션 지속가능 확산'),
         ('특허 2건 기반 원단 프리미엄 단가',
-         '재생 원단 · 업사이클 복합시트'),
-        ('유럽 원단 파트너 협의 진행',
-         '진입 장벽 확보 예정 (MOU·견적서 단계)'),
+         '재생 원단 · 업사이클 복합시트 · 유럽 파트너 협의 병행'),
     ]
     ey = ly - 22
     for t, d in evidences:
@@ -1050,11 +1052,11 @@ def page_evidence(c):
     c.line(rx, ly - 6, rx + 130, ly - 6)
 
     infras = [
-        ('여정민 대표', '세인트마틴 · 루이비통 컴피티션 우승 · 브랜딩·유럽 인맥'),
-        ('나기주 연구원', '기업부설연구소 (KOITA) 소속 · 특허 R&D 인력'),
-        ('직조설비 2,800만원 보유', '재생 원단 자체 직조·재조합 라인 (특허 1 구현)'),
-        ('벤처(혁신성장)·특허 2건', '기보 우대 3중 · 기술평가등급 상향 근거'),
-        ('유럽 원단 독점 유통', '프·이·영 세인트마틴 동기 네트워크'),
+        ('여정민 대표', '세인트마틴 · 루이비통 컴피티션 우승 · 브랜딩·해외 인맥'),
+        ('현재 4명 근무 + 1명 채용 예정', '대표 + 나기주 연구원 + 실무진 = 5명 체제 예정'),
+        ('재활용원단 제조설비 2,800만원', '명품 폐원단 재조합·재생 원단 자체 제조 라인'),
+        ('벤처(혁신성장)·특허 2건·기업부설연구소', '기보 우대 3중 · 기술평가등급 상향 근거'),
+        ('일본 18억 MOU + 유럽 파트너 협의', '이중 해외 채널 · 세인트마틴 동기 네트워크 기반'),
     ]
     iy = ly - 22
     for t, d in infras:
@@ -1203,8 +1205,8 @@ def page_closing(c):
     c.drawString(MX + 16, SH - 308, 'T. [회사 기재]    E. [회사 기재]    사업자등록 758-88-02575')
 
     # 5대 강점 배지
-    badges = ['특허 2건 출원', '벤처(혁신성장)·기업부설연구소',
-              '유럽 원단 독점 유통', '세인트마틴·루이비통 우승 대표',
+    badges = ['일본 18억 MOU 체결', '특허 2건 출원',
+              '벤처(혁신성장)·기업부설연구소', '세인트마틴·루이비통 우승 대표',
               'NICE 880점·차입금 0원', 'ESG 순환경제 원단']
     by = 200
     bx_cur = MX + 16
@@ -1252,7 +1254,7 @@ def page_closing(c):
 # =====================================================
 def build_pdf():
     out_dir = Path('/home/user/-/아꽁씨엘')
-    out_path = out_dir / '(주)아꽁씨엘_정책자금사업계획서_20260514_v2_옵션A_1억.pdf'
+    out_path = out_dir / '(주)아꽁씨엘_정책자금사업계획서_20260514_v3_옵션A_1억_일본MOU.pdf'
     c = pdfcanvas.Canvas(str(out_path), pagesize=(SW, SH))
     c.setTitle('(주)아꽁씨엘 정책자금 사업계획서')
     c.setAuthor('히어컴퍼니 (HearCompany) Corporate Consulting')
