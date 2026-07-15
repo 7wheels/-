@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-(주)아꽁씨엘 — 정책자금 사업계획서 PDF 빌더 (기술보증기금 2억 신청)
+(주)아꽁씨엘 — 정책자금 사업계획서 PDF 빌더 (기술보증기금 1억 신청 · v2 옵션 A)
 표준 11페이지 양식 / 16:9 슬라이드 / 딥그린+골드 (ESG·업사이클 컨셉)
 작성: 히어컴퍼니 (HearCompany) Corporate Consulting
 """
@@ -72,7 +72,7 @@ def draw_footer_bar(c, page_no):
     c.rect(0, 0, SW, FOOTER_H, stroke=0, fill=1)
     c.setFillColor(WHITE)
     c.setFont(KR, 8)
-    c.drawString(MX, 7, f'작성일 {DATE_STR} · 신용보증재단 보증신청용 (1.5억)')
+    c.drawString(MX, 7, f'작성일 {DATE_STR} · 기술보증기금 보증신청용 (1억)')
     c.setFillColor(GOLD_LT)
     c.drawRightString(SW - MX, 7, BRAND_LINE)
 
@@ -171,7 +171,7 @@ def page_cover(c):
     c.rect(MX + 16, SH - 440, 280, 36, stroke=0, fill=1)
     c.setFillColor(NAVY_DK)
     c.setFont(KRB, 16)
-    c.drawString(MX + 28, SH - 430, '신용보증재단 보증 신청  1.5억 원')
+    c.drawString(MX + 28, SH - 430, '기술보증기금 보증 신청  1억 원')
 
     # 하단 정보 박스 (우측 정렬)
     c.setFillColor(WHITE)
@@ -1078,7 +1078,7 @@ def page_evidence(c):
 def page_fund_plan(c):
     draw_header_bar(c, 10)
     draw_footer_bar(c, 10)
-    y0 = section_title(c, '09', '자금 소요 계획', 'Fund Usage Plan — 기술보증기금 2억')
+    y0 = section_title(c, '09', '자금 소요 계획', 'Fund Usage Plan — 기술보증기금 1억 (2트랙)')
 
     # 트랙 분리 안내 박스
     tr_top = y0 - 6
@@ -1091,33 +1091,27 @@ def page_fund_plan(c):
     c.drawString(MX + 16, tr_top - 22, 'TRACK SEPARATION')
     c.setFillColor(WHITE)
     c.setFont(KRB, 14)
-    c.drawString(MX + 16, tr_top - 42, '기술보증기금 2억 · 3트랙 분리 (운영자금 40% + R&D 30% + 수출자금 30%)')
+    c.drawString(MX + 16, tr_top - 42, '기술보증기금 1억 · 2트랙 분리 (R&D 자금 60% + 운영자금 40%)  ·  수출자금은 실적 확보 후 별건 재신청')
 
-    # 3개 자금 사용처 카드
+    # 2개 자금 사용처 카드 (수출자금 삭제 · R&D 확대)
     cards = [
         {
-            'no': '①', 'title': '운영자금',
-            'sub':  '원단 매입 · 인건비 · 임차료 · 마케팅',
-            'amt':  '8,000만 원  (40%)',
-            'track':'운영자금 트랙',
+            'no': '①', 'title': 'R&D 자금',
+            'sub':  '특허 후속 개발 · 재생 공정 고도화 · 시제품 · 해외 인증 준비(OEKO-TEX·GRS)',
+            'amt':  '6,000만 원  (60%)',
+            'track':'R&D 트랙',
             'col':  NAVY,
         },
         {
-            'no': '②', 'title': 'R&D 자금',
-            'sub':  '특허 후속 개발 · 재생 공정 고도화 · 시제품',
-            'amt':  '6,000만 원  (30%)',
-            'track':'R&D 트랙',
+            'no': '②', 'title': '운영자금',
+            'sub':  '원단 매입 · 인건비 · 임차료 · 마케팅',
+            'amt':  '4,000만 원  (40%)',
+            'track':'운영자금 트랙',
             'col':  NAVY_LT,
         },
-        {
-            'no': '③', 'title': '수출자금',
-            'sub':  '유럽 독점 유통 운영 · 물류 · 해외 인증(OEKO-TEX·GRS)',
-            'amt':  '6,000만 원  (30%)',
-            'track':'수출자금 트랙',
-            'col':  GOLD,
-        },
     ]
-    cw = (SW - MX * 2 - 24) / 3
+    n_cards = len(cards)
+    cw = (SW - MX * 2 - 12 * (n_cards - 1)) / n_cards
     ch = 200
     cy = tr_top - 60
     for i, ck in enumerate(cards):
@@ -1166,7 +1160,7 @@ def page_fund_plan(c):
     c.setFont(KR, 10)
     c.drawString(MX + 16, sum_y - 22, 'TOTAL FUND REQUIRED')
     c.setFont(KRB, 22)
-    c.drawString(MX + 16, sum_y - 44, '기술보증기금 보증 요청  총 2억 원')
+    c.drawString(MX + 16, sum_y - 44, '기술보증기금 보증 요청  총 1억 원')
     c.setFillColor(NAVY_DK)
     c.setFont(KR, 9)
     c.drawRightString(SW - MX - 16, sum_y - 22, '※ 분배 비율 예시 — 회사 측 정확 사업계획에 따라 조정 [회사 기재]')
@@ -1258,11 +1252,11 @@ def page_closing(c):
 # =====================================================
 def build_pdf():
     out_dir = Path('/home/user/-/아꽁씨엘')
-    out_path = out_dir / '(주)아꽁씨엘_정책자금사업계획서_20260513.pdf'
+    out_path = out_dir / '(주)아꽁씨엘_정책자금사업계획서_20260514_v2_옵션A_1억.pdf'
     c = pdfcanvas.Canvas(str(out_path), pagesize=(SW, SH))
     c.setTitle('(주)아꽁씨엘 정책자금 사업계획서')
     c.setAuthor('히어컴퍼니 (HearCompany) Corporate Consulting')
-    c.setSubject('기술보증기금 보증신청용 사업계획서 (2억)')
+    c.setSubject('기술보증기금 보증신청용 사업계획서 (1억 · v2 옵션 A)')
 
     page_cover(c)
     page_business_intro(c)
