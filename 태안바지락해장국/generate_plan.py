@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-태안바지락해장국 사업계획서 PDF 빌더 (정책자금 1억 · 기관명 미기재)
+태안바지락해장국 사업계획서 PDF 빌더 (정책자금 5,000만 · 기관명 미기재)
 표준 11페이지 · 16:9 슬라이드 · 웜톤(딥레드+골드) 요식업 컨셉
 작성: 히어컴퍼니 (HearCompany) Corporate Consulting
 """
@@ -61,7 +61,7 @@ def footer_bar(c):
     c.rect(0, 0, SW, FOOTER_H, stroke=0, fill=1)
     c.setFillColor(WHITE)
     c.setFont(KR, 8)
-    c.drawString(MX, 7, f'작성일 {DATE_STR} · 정책자금 보증/융자 신청용 (1억)')
+    c.drawString(MX, 7, f'작성일 {DATE_STR} · 정책자금 보증/융자 신청용 (5,000만)')
     c.setFillColor(GOLD_LT)
     c.drawRightString(SW - MX, 7, BRAND)
 
@@ -119,7 +119,7 @@ def p1(c):
     c.drawString(MX + 16, SH - 70, BRAND)
     c.setFillColor(WHITE)
     c.setFont(KR, 10)
-    c.drawString(MX + 16, SH - 88, 'BUSINESS PLAN  ·  POLICY FUND (1억)')
+    c.drawString(MX + 16, SH - 88, 'BUSINESS PLAN  ·  POLICY FUND (5,000만)')
 
     c.setFillColor(WHITE)
     c.setFont(KRB, 46)
@@ -141,7 +141,7 @@ def p1(c):
     c.rect(MX + 16, SH - 390, 300, 36, stroke=0, fill=1)
     c.setFillColor(RED_DK)
     c.setFont(KRB, 16)
-    c.drawString(MX + 28, SH - 380, '정책자금 보증/융자 신청  1억 원')
+    c.drawString(MX + 28, SH - 380, '정책자금 보증/융자 신청  5,000만 원')
 
     c.setFillColor(WHITE)
     c.setFont(KR, 10)
@@ -409,7 +409,7 @@ def p5(c):
     c.drawString(lx + 24, ly + lh - 142, '김재만 대표')
     c.setFillColor(GOLD_LT); c.setFont(KR, 10)
     c.drawString(lx + 24, ly + lh - 158, 'Founder & CEO')
-    c.drawString(lx + 24, ly + lh - 173, '생년월일 · 사업자등록 [회사 기재]')
+    c.drawString(lx + 24, ly + lh - 173, '1977.12.19 · 사업자등록 [회사 기재]')
 
     by = ly + 78
     c.setFillColor(GOLD_PALE)
@@ -450,7 +450,7 @@ def p5(c):
     c.setFillColor(BLACK); c.setFont(KR, 11)
     c.drawString(rx, s2 - 26, '· NICE 839점 · 요식업 자영업 기준 양호 신용')
     c.drawString(rx, s2 - 44, '· 2025 매출 6.2억 · 영업이익 4,200만 (영업이익률 6.8%)')
-    c.drawString(rx, s2 - 62, '· 상환재원 확보: 연 영업이익 4,200만 > 1억 5년분할 연상환 약 2천만 (DSCR 2배+)')
+    c.drawString(rx, s2 - 62, '· 상환재원: 영업이익 4,200만 > 신규 5천만+기대출 5천만 합산 연상환 약 2,200만 (DSCR 약 1.9배)')
     c.showPage()
 
 
@@ -556,7 +556,7 @@ def p7(c):
          '= 2025 실적 연 6.2억 검증'),
         ('2', '밀키트·신규 메뉴 (신규·메뉴개발)',
          '개당 단가 × 월 판매량',
-         '= 메뉴개발 5,000만 투입 결과물'),
+         '= 메뉴개발 2,500만 투입 결과물'),
         ('3', '2호 직영점 (2027 초·연 기여)',
          '1호점 검증 모델 복제 · 80평 60석',
          '= 태안 산단 · 연 매출 기여'),
@@ -657,7 +657,7 @@ def p8(c):
          'big': '연 6.2억 원', 'note': '2025 실적 6.2억 부합 · 좌석·회전율 [회사 기재]'},
         {'no': '2', 'title': '밀키트·신규 메뉴', 'sub': '(추정 · 미실현)', 'tag': '추정(미실현)',
          'c': ['밀키트 개당 1.2만 원', '× 월 판매 500개', '= 월 600만 원', '× 12개월'],
-         'big': '연 7,200만 원', 'note': '메뉴개발 5,000만 결과물 · 채널·OEM [회사 기재]'},
+         'big': '연 7,200만 원', 'note': '메뉴개발 2,500만 결과물 · 채널·OEM [회사 기재]'},
         {'no': '3', 'title': '2호 직영점', 'sub': '(추정 · 2027 초 오픈)', 'tag': '추정(미실현)',
          'c': ['1호점 검증 모델 복제', '80평 · 60석 · 태안 산단', '오픈 첫해 3~4억', '안정화 후 6억'],
          'big': '첫해 3~4억', 'note': '투자 3억 별도 조달 · [회사 기재]'},
@@ -756,7 +756,7 @@ def p9(c):
     axis = [
         ('①', '메뉴 개발', RED,
          '밀키트·신규 메뉴로 매출 다각화',
-         '2호점 상품 경쟁력 확보 (5,000만)'),
+         '2호점 상품 경쟁력 확보 (2,500만)'),
         ('②', '2호 직영점 확장', GOLD,
          '태안 산단 80평·60석 · 2027 초',
          '투자 3억 · 이번 자금은 준비 단계 조성'),
@@ -786,7 +786,7 @@ def p9(c):
 # =====================================================
 def p10(c):
     header_bar(c, 10); footer_bar(c)
-    y0 = section_title(c, '09', '자금 소요 계획', 'Fund Usage Plan — 정책자금 1억')
+    y0 = section_title(c, '09', '자금 소요 계획', 'Fund Usage Plan — 정책자금 5,000만')
 
     tr = y0 - 6
     c.setFillColor(RED)
@@ -794,16 +794,16 @@ def p10(c):
     c.setFillColor(GOLD)
     c.rect(MX, tr - 4, SW - MX * 2, 4, stroke=0, fill=1)
     c.setFillColor(GOLD_LT); c.setFont(KR, 10)
-    c.drawString(MX + 16, tr - 20, 'FUND USAGE (정책자금 1억 · 기관명 미기재)')
+    c.drawString(MX + 16, tr - 20, 'FUND USAGE (정책자금 5,000만 · 기관명 미기재)')
     c.setFillColor(WHITE); c.setFont(KRB, 14)
     c.drawString(MX + 16, tr - 40, '메뉴개발·연구 50% + 고용 30% + 운영·마케팅 20%  ·  2호점 확장 준비 단계 자금')
 
     cards = [
-        {'no': '①', 'title': '메뉴개발·연구', 'amt': '5,000만 원 (50%)', 'col': RED,
+        {'no': '①', 'title': '메뉴개발·연구', 'amt': '2,500만 원 (50%)', 'col': RED,
          'sub': '밀키트·신규 메뉴 개발·상품화·시제품'},
-        {'no': '②', 'title': '고용 (1명)', 'amt': '3,000만 원 (30%)', 'col': RED_LT,
+        {'no': '②', 'title': '고용 (1명)', 'amt': '1,500만 원 (30%)', 'col': RED_LT,
          'sub': '조직 확대·다점포 운영 역량'},
-        {'no': '③', 'title': '운영·마케팅', 'amt': '2,000만 원 (20%)', 'col': GOLD,
+        {'no': '③', 'title': '운영·마케팅', 'amt': '1,000만 원 (20%)', 'col': GOLD,
          'sub': '브랜드 확산·2호점 상권 사전 인지도'},
     ]
     n = len(cards)
@@ -842,10 +842,10 @@ def p10(c):
     c.setFillColor(RED_DK); c.setFont(KR, 10)
     c.drawString(MX + 16, sy - 20, 'TOTAL')
     c.setFont(KRB, 20)
-    c.drawString(MX + 16, sy - 42, '총 정책자금 신청  1억 원')
+    c.drawString(MX + 16, sy - 42, '총 정책자금 신청  5,000만 원')
     c.setFillColor(RED_DK); c.setFont(KR, 9)
-    c.drawString(MX + 16, sy - 58, '※ 상환재원: 2025 영업이익 4,200만 > 1억 5년분할 연상환 약 2천만 (DSCR 2배+) · 2호점 잔여 2억 조달 [회사 기재]')
-    c.drawRightString(SW - MX - 16, sy - 20, '※ 매출 6.2억 대비 16% · 보수적')
+    c.drawString(MX + 16, sy - 58, '※ 상환재원: 영업이익 4,200만 > 신규 5천만+기존 정책자금 기대출 5천만 합산 연상환 약 2,200만 (DSCR 약 1.9배)')
+    c.drawRightString(SW - MX - 16, sy - 20, '※ 매출 6.2억 대비 8% · 매우 보수적')
     c.showPage()
 
 
@@ -913,7 +913,7 @@ def build():
     c = pdfcanvas.Canvas(str(out), pagesize=(SW, SH))
     c.setTitle('태안바지락해장국 사업계획서')
     c.setAuthor('히어컴퍼니 (HearCompany) Corporate Consulting')
-    c.setSubject('정책자금 보증/융자 신청용 사업계획서 (1억)')
+    c.setSubject('정책자금 보증/융자 신청용 사업계획서 (5,000만)')
     p1(c); p2(c); p3(c); p4(c); p5(c); p6(c); p7(c); p8(c); p9(c); p10(c); p11(c)
     c.save()
     size = out.stat().st_size
