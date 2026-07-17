@@ -320,8 +320,8 @@ def p4(c):
     c.drawString(cx0 + 16, cy0 + chh - 44, '단위: 백만 원')
 
     bars = [
-        ('2024',      63,  '부분영업',    GRAY_LT),
-        ('2025',      620, '9.8배',      GOLD),
+        ('2024',      63,  '3개월영업',   GRAY_LT),
+        ('2025',      620, '월 2.5배',    GOLD),
         ('2026 상반기', 420, '68% 달성',   RED_LT),
         ('2026 목표',  900, '연간 목표',   GREEN_OK),
     ]
@@ -356,12 +356,13 @@ def p4(c):
     c.rect(rx, y0 - 6 - 4, rw, 4, stroke=0, fill=1)
     c.setFillColor(GOLD_LT); c.setFont(KR, 10)
     c.drawString(rx + 14, y0 - 28, 'KEY PERFORMANCE')
-    c.setFillColor(WHITE); c.setFont(KRB, 34)
-    c.drawString(rx + 14, y0 - 66, '9.8배')
-    c.setFillColor(GOLD_LT); c.setFont(KR, 10)
-    c.drawString(rx + 14, y0 - 84, '2024 → 2025 매출 성장')
+    c.setFillColor(WHITE); c.setFont(KRB, 30)
+    c.drawString(rx + 14, y0 - 62, '월 2.5배')
+    c.setFillColor(GOLD_LT); c.setFont(KR, 9)
+    c.drawString(rx + 14, y0 - 79, '월평균 2,100만→5,167만 (실 성장)')
+    c.drawString(rx + 14, y0 - 91, '2024.10.8 개업 · 3개월 부분영업')
     c.setFillColor(WHITE); c.setFont(KRB, 12)
-    c.drawString(rx + 14, y0 - 104, '2026 상반기 이미 4.2억 (68%)')
+    c.drawString(rx + 14, y0 - 108, '2026 상반기 이미 4.2억 (68%)')
 
     cl = y0 - 6 - 110 - 12
     c.setFillColor(BG_GRAY)
@@ -381,8 +382,8 @@ def p4(c):
     ]):
         c.drawString(rx + 14, cl - 48 - k * 18, ln)
     c.setFillColor(GOLD); c.setFont(KR, 9)
-    c.drawString(rx + 14, cl - 128, '※ NICE 839점 · 좌석수·평수·개업일 [회사 기재]')
-    c.drawString(rx + 14, cl - 146, '※ 2024 부분영업(개업 N개월) → 실 성장률 정상')
+    c.drawString(rx + 14, cl - 128, '※ NICE 839점 · 2025 영업이익 4,200만(6.8%)')
+    c.drawString(rx + 14, cl - 146, '※ 2024.10.8 개업 3개월 → 월평균 2.5배 실성장')
     c.showPage()
 
 
@@ -429,7 +430,7 @@ def p5(c):
         ('출신', '디자이너 출신 — 브랜딩·공간 설계 역량'),
         ('경력', '요식업 업체 컨설팅 다년 — 매장·메뉴 기획'),
         ('창업', '태안 특산물 바지락 접목 해장국 출시'),
-        ('성과', '2025년 연 6.2억 · 2026 상반기 4.2억'),
+        ('성과', '2025 연 6.2억·영업이익 4,200만 · 2026 상반기 4.2억'),
     ]
     cy = s1 - 22
     for yr, desc in careers:
@@ -448,8 +449,8 @@ def p5(c):
     c.line(rx, s2 - 6, rx + 130, s2 - 6)
     c.setFillColor(BLACK); c.setFont(KR, 11)
     c.drawString(rx, s2 - 26, '· NICE 839점 · 요식업 자영업 기준 양호 신용')
-    c.drawString(rx, s2 - 44, '· 2025 매출 6.2억 → 2026 상반기 4.2억 (성장 궤도)')
-    c.drawString(rx, s2 - 62, '· 2025 영업이익·순이익 (상환재원 핵심) · 기존 대출 [회사 기재]')
+    c.drawString(rx, s2 - 44, '· 2025 매출 6.2억 · 영업이익 4,200만 (영업이익률 6.8%)')
+    c.drawString(rx, s2 - 62, '· 상환재원 확보: 연 영업이익 4,200만 > 1억 5년분할 연상환 약 2천만 (DSCR 2배+)')
     c.showPage()
 
 
@@ -582,8 +583,8 @@ def p7(c):
     c.drawString(rx, st, '[ 매출 상황 ]')
     c.setStrokeColor(GOLD); c.line(rx, st - 6, rx + 100, st - 6)
     rows = [
-        ('2024',      '63,000,000원',  '부분영업'),
-        ('2025',      '620,000,000원', '9.8배 증가'),
+        ('2024',      '63,000,000원',  '3개월영업'),
+        ('2025',      '620,000,000원', '월 2.5배'),
         ('2026 상반기', '420,000,000원', '68% 달성'),
         ('2026 목표',  '900,000,000원', '연간 목표'),
     ]
@@ -596,7 +597,7 @@ def p7(c):
         c.drawString(rx + 8, ry - 16, yr)
         c.setFillColor(BLACK); c.setFont(KRB if hl else KR, 9)
         c.drawString(rx + 74, ry - 16, amt)
-        c.setFillColor(GREEN_OK if '증가' in tag or '달성' in tag else GRAY)
+        c.setFillColor(GREEN_OK if ('배' in tag or '달성' in tag) else GRAY)
         c.setFont(KR, 9)
         c.drawRightString(rx + rw - 8, ry - 16, tag)
         ry -= 24
@@ -843,7 +844,7 @@ def p10(c):
     c.setFont(KRB, 20)
     c.drawString(MX + 16, sy - 42, '총 정책자금 신청  1억 원')
     c.setFillColor(RED_DK); c.setFont(KR, 9)
-    c.drawString(MX + 16, sy - 58, '※ 2호점(3억) 중 이번 1억은 준비 단계 조성 자금 · 잔여 2억 조달계획 [회사 기재] / 상환재원: 2025 영업이익·연 현금흐름 [회사 기재]')
+    c.drawString(MX + 16, sy - 58, '※ 상환재원: 2025 영업이익 4,200만 > 1억 5년분할 연상환 약 2천만 (DSCR 2배+) · 2호점 잔여 2억 조달 [회사 기재]')
     c.drawRightString(SW - MX - 16, sy - 20, '※ 매출 6.2억 대비 16% · 보수적')
     c.showPage()
 
