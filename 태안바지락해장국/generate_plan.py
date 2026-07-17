@@ -320,7 +320,7 @@ def p4(c):
     c.drawString(cx0 + 16, cy0 + chh - 44, '단위: 백만 원')
 
     bars = [
-        ('2024',      63,  '초기',       GRAY_LT),
+        ('2024',      63,  '부분영업',    GRAY_LT),
         ('2025',      620, '9.8배',      GOLD),
         ('2026 상반기', 420, '68% 달성',   RED_LT),
         ('2026 목표',  900, '연간 목표',   GREEN_OK),
@@ -381,8 +381,8 @@ def p4(c):
     ]):
         c.drawString(rx + 14, cl - 48 - k * 18, ln)
     c.setFillColor(GOLD); c.setFont(KR, 9)
-    c.drawString(rx + 14, cl - 128, '※ NICE 839점 · 요식업 자영업 양호 신용')
-    c.drawString(rx + 14, cl - 146, '※ 상세 객단가·방문객 [회사 기재]')
+    c.drawString(rx + 14, cl - 128, '※ NICE 839점 · 좌석수·평수·개업일 [회사 기재]')
+    c.drawString(rx + 14, cl - 146, '※ 2024 부분영업(개업 N개월) → 실 성장률 정상')
     c.showPage()
 
 
@@ -449,7 +449,7 @@ def p5(c):
     c.setFillColor(BLACK); c.setFont(KR, 11)
     c.drawString(rx, s2 - 26, '· NICE 839점 · 요식업 자영업 기준 양호 신용')
     c.drawString(rx, s2 - 44, '· 2025 매출 6.2억 → 2026 상반기 4.2억 (성장 궤도)')
-    c.drawString(rx, s2 - 62, '· 영업이익 · 기존 대출 현황 [회사 기재]')
+    c.drawString(rx, s2 - 62, '· 2025 영업이익·순이익 (상환재원 핵심) · 기존 대출 [회사 기재]')
     c.showPage()
 
 
@@ -582,7 +582,7 @@ def p7(c):
     c.drawString(rx, st, '[ 매출 상황 ]')
     c.setStrokeColor(GOLD); c.line(rx, st - 6, rx + 100, st - 6)
     rows = [
-        ('2024',      '63,000,000원',  '초기'),
+        ('2024',      '63,000,000원',  '부분영업'),
         ('2025',      '620,000,000원', '9.8배 증가'),
         ('2026 상반기', '420,000,000원', '68% 달성'),
         ('2026 목표',  '900,000,000원', '연간 목표'),
@@ -651,15 +651,15 @@ def p8(c):
     y0 = y - 22
 
     cards = [
-        {'no': '1', 'title': '1호점 본점', 'sub': '(기존 · 검증)', 'tag': 'EXISTING',
-         'c': ['객단가 1.2만 원', '× 일 방문 150명', '= 일 180만 원', '× 연 350 영업일'],
-         'big': '연 6.3억 원', 'note': '2025 실적 6.2억 부합 · [회사 기재] 보정'},
-        {'no': '2', 'title': '밀키트·신규 메뉴', 'sub': '(신규 · 메뉴개발)', 'tag': 'NEW',
+        {'no': '1', 'title': '1호점 본점', 'sub': '(기존 · 검증 실적)', 'tag': '검증 실적',
+         'c': ['평균 객단가 1.18만 원', '× 일 방문 160명', '= 일 189만 원', '× 연 330 영업일'],
+         'big': '연 6.2억 원', 'note': '2025 실적 6.2억 부합 · 좌석·회전율 [회사 기재]'},
+        {'no': '2', 'title': '밀키트·신규 메뉴', 'sub': '(추정 · 미실현)', 'tag': '추정(미실현)',
          'c': ['밀키트 개당 1.2만 원', '× 월 판매 500개', '= 월 600만 원', '× 12개월'],
-         'big': '연 7,200만 원', 'note': '메뉴개발 5,000만 투입 결과물'},
-        {'no': '3', 'title': '2호 직영점', 'sub': '(2027 초 오픈)', 'tag': 'EXPANSION',
-         'c': ['1호점 검증 모델 복제', '80평 · 60석 · 태안 산단', '2027 초 오픈', '연 매출 기여'],
-         'big': '연 6억+ 기여', 'note': '투자 3억은 별도 로드맵 · [회사 기재]'},
+         'big': '연 7,200만 원', 'note': '메뉴개발 5,000만 결과물 · 채널·OEM [회사 기재]'},
+        {'no': '3', 'title': '2호 직영점', 'sub': '(추정 · 2027 초 오픈)', 'tag': '추정(미실현)',
+         'c': ['1호점 검증 모델 복제', '80평 · 60석 · 태안 산단', '오픈 첫해 3~4억', '안정화 후 6억'],
+         'big': '첫해 3~4억', 'note': '투자 3억 별도 조달 · [회사 기재]'},
     ]
     cw = (SW - MX * 2 - 24) / 3
     ch = 268
@@ -703,15 +703,17 @@ def p8(c):
     c.setFillColor(GOLD)
     c.rect(MX, sy - 4, SW - MX * 2, 4, stroke=0, fill=1)
     c.setFillColor(GOLD_LT); c.setFont(KR, 10)
-    c.drawString(MX + 16, sy - 20, '[ 합계 · 회사 자체 추정 ]')
+    c.drawString(MX + 16, sy - 20, '[ 합계 · 검증 실적 + 추정 병기 ]')
     c.setFillColor(GOLD)
     c.rect(MX + 16, sy - 52, 300, 26, stroke=0, fill=1)
     c.setFillColor(RED_DK); c.setFont(KRB, 13)
     c.drawString(MX + 24, sy - 44, '2026 기본  약 9억 원')
-    c.setFillColor(WHITE); c.setFont(KR, 10)
-    c.drawString(MX + 340, sy - 30, '2027 공격 (2호점 반영)')
-    c.setFillColor(GOLD_LT); c.setFont(KRB, 15)
-    c.drawString(MX + 340, sy - 48, '약 13억 원+')
+    c.setFillColor(WHITE); c.setFont(KR, 9)
+    c.drawString(MX + 340, sy - 24, '2027 공격 (2호점 안정화 반영)')
+    c.setFillColor(GOLD_LT); c.setFont(KRB, 14)
+    c.drawString(MX + 340, sy - 42, '약 12~13억 원')
+    c.setFillColor(WHITE); c.setFont(KR, 8)
+    c.drawString(MX + 340, sy - 56, '※ 밀키트·2호점은 미실현 추정 · 실적 아님')
     c.showPage()
 
 
@@ -841,8 +843,8 @@ def p10(c):
     c.setFont(KRB, 20)
     c.drawString(MX + 16, sy - 42, '총 정책자금 신청  1억 원')
     c.setFillColor(RED_DK); c.setFont(KR, 9)
-    c.drawString(MX + 16, sy - 58, '※ 2호 직영점(3억, 2027 초)은 중장기 성장 로드맵 — 이번 1억은 그 확장을 준비하는 성장 기반 조성 단계 자금')
-    c.drawRightString(SW - MX - 16, sy - 20, '※ 매출 6.2억 대비 16% · 요식업 기준 보수적')
+    c.drawString(MX + 16, sy - 58, '※ 2호점(3억) 중 이번 1억은 준비 단계 조성 자금 · 잔여 2억 조달계획 [회사 기재] / 상환재원: 2025 영업이익·연 현금흐름 [회사 기재]')
+    c.drawRightString(SW - MX - 16, sy - 20, '※ 매출 6.2억 대비 16% · 보수적')
     c.showPage()
 
 
