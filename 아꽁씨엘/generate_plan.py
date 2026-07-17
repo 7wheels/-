@@ -177,7 +177,7 @@ def page_cover(c):
     c.setFillColor(WHITE)
     c.setFont(KR, 10)
     info_y = 80
-    c.drawRightString(SW - MX, info_y + 50, '제출처  |  신용보증재단')
+    c.drawRightString(SW - MX, info_y + 50, '제출처  |  기술보증기금 (기보)')
     c.drawRightString(SW - MX, info_y + 36, '연락처  |  T. [회사 기재]   E. [회사 기재]')
     c.drawRightString(SW - MX, info_y + 22, '사업자등록  |  758-88-02575')
     c.drawRightString(SW - MX, info_y + 8,  '주  소  |  서울시 강남구 도산대로58길 12, 신관4층')
@@ -443,7 +443,7 @@ def page_achievements(c):
         c.setFillColor(BLACK)
         c.setFont(KR, 10)
         c.drawCentredString(bx + bar_w / 2, plot_y - 14, label)
-        c.setFillColor(GREEN_OK if tag == '흑자전환' else (GRAY if tag != '진행중' else NAVY_LT))
+        c.setFillColor(GREEN_OK if tag in ('5월 실적', '연간 목표') else GRAY)
         c.setFont(KR, 8)
         c.drawCentredString(bx + bar_w / 2, plot_y - 26, tag)
 
@@ -463,11 +463,12 @@ def page_achievements(c):
     c.setFont(KRB, 30)
     c.drawString(rx + 14, y0 - 64, '18억')
     c.setFillColor(GOLD_LT)
-    c.setFont(KR, 11)
-    c.drawString(rx + 14, y0 - 82, '일본 업체 MOU 체결 (2026)')
+    c.setFont(KR, 9)
+    c.drawString(rx + 14, y0 - 80, '일본 파트너 MOU 총액')
+    c.drawString(rx + 14, y0 - 92, '(연간 실행규모 [회사 기재])')
     c.setFillColor(WHITE)
-    c.setFont(KRB, 14)
-    c.drawString(rx + 14, y0 - 104, '특허 2건 · 벤처(혁신성장) · 연구소')
+    c.setFont(KRB, 12)
+    c.drawString(rx + 14, y0 - 108, '특허 2건 · 벤처(혁신성장) · 연구소')
 
     # 거래처 박스
     cl_y = y0 - 6 - 110 - 12
@@ -912,15 +913,15 @@ def page_sales_plan_2(c):
             'note':  '국내 지속가능 패션 브랜드 3~5곳',
         },
         {
-            'no': '3', 'title': '일본 18억 MOU',
-            'subtitle': '(신규 확정 · 다년 계약)',
+            'no': '3', 'title': '일본 파트너 MOU',
+            'subtitle': '(본계약 전환 협의 중 · 다년)',
             'tag': 'CONTRACT',
-            'calc1': '일본 파트너 MOU 총액',
-            'calc2': '18억 원',
-            'calc3': '2026 하반기 매출 인식 시작',
-            'calc4': '유럽 파트너 협의 별도 진행',
+            'calc1': '다년 총액 18억 원',
+            'calc2': '× 연 실행 [회사 기재]',
+            'calc3': '2026 하반기 인식 개시',
+            'calc4': '국내 CAPA 확장 병행',
             'big':   'MOU 18억 원',
-            'note':  '연간 실행 규모·조건 [회사 기재]',
+            'note':  '설비 확장·인력 채용 병행 필요',
         },
     ]
     cw = (SW - MX * 2 - 24) / 3
@@ -1020,8 +1021,8 @@ def page_evidence(c):
     c.line(lx, ly - 6, lx + 130, ly - 6)
 
     evidences = [
-        ('일본 업체 18억 원 MOU 체결 확정',
-         '매출 대비 26배 규모 · 다년 확정 계약 (2026 하반기 매출 인식)'),
+        ('일본 업체 18억 원 규모 MOU 체결',
+         '본계약 전환 협의 중 · 다년 계약 (2026 하반기 매출 인식 개시)'),
         ('2026 상반기 매출 5,000만 달성',
          '2025년 매출(7,000만)의 71% 이미 달성 · 성장 궤도 실증'),
         ('ESG·지속가능 패션 시장 성장세',
@@ -1085,7 +1086,7 @@ def page_fund_plan(c):
     # 트랙 분리 안내 박스
     tr_top = y0 - 6
     c.setFillColor(NAVY)
-    c.rect(MX, tr_top - 50, SW - MX * 2, 50, stroke=0, fill=1)
+    c.rect(MX, tr_top - 64, SW - MX * 2, 64, stroke=0, fill=1)
     c.setFillColor(GOLD)
     c.rect(MX, tr_top - 4, SW - MX * 2, 4, stroke=0, fill=1)
     c.setFillColor(GOLD_LT)
@@ -1094,6 +1095,9 @@ def page_fund_plan(c):
     c.setFillColor(WHITE)
     c.setFont(KRB, 14)
     c.drawString(MX + 16, tr_top - 42, '기술보증기금 1억 · 2트랙 분리 (R&D 자금 60% + 운영자금 40%)  ·  수출자금은 실적 확보 후 별건 재신청')
+    c.setFillColor(GOLD_LT)
+    c.setFont(KR, 9)
+    c.drawString(MX + 16, tr_top - 58, '※ 초안 2억 → 1억 하향 (매출 대비 143% 수준으로 기보 표준 그리드 근접 · 기술평가 T4 이상 방어 가능)')
 
     # 2개 자금 사용처 카드 (수출자금 삭제 · R&D 확대)
     cards = [
@@ -1115,7 +1119,7 @@ def page_fund_plan(c):
     n_cards = len(cards)
     cw = (SW - MX * 2 - 12 * (n_cards - 1)) / n_cards
     ch = 200
-    cy = tr_top - 60
+    cy = tr_top - 74
     for i, ck in enumerate(cards):
         cx = MX + i * (cw + 12)
         c.setFillColor(BG_GRAY)
@@ -1254,7 +1258,7 @@ def page_closing(c):
 # =====================================================
 def build_pdf():
     out_dir = Path('/home/user/-/아꽁씨엘')
-    out_path = out_dir / '(주)아꽁씨엘_정책자금사업계획서_20260514_v3_옵션A_1억_일본MOU.pdf'
+    out_path = out_dir / '(주)아꽁씨엘_정책자금사업계획서_20260514_v3.1_옵션A_1억_일본MOU_빡빡이보정.pdf'
     c = pdfcanvas.Canvas(str(out_path), pagesize=(SW, SH))
     c.setTitle('(주)아꽁씨엘 정책자금 사업계획서')
     c.setAuthor('히어컴퍼니 (HearCompany) Corporate Consulting')
